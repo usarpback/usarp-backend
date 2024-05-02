@@ -6,10 +6,9 @@ module.exports = {
       const users = await UserModel.findAll();
       return response.status(200).json({ users });
     } catch (error) {
-      return response.status(400).json({ error: error.message });
+      return response.status(500).json({ message: "Internal server error" });
     }
   },
-
 
   async updateUser(request, response) {
     try {
@@ -22,7 +21,7 @@ module.exports = {
       }
 
       const updatedData = {
-        fullname: request.body.fullname || user.fullname,
+        fullname: request.body.fullName || user.fullName,
         email: request.body.email || user.email,
         password: request.body.password || user.password,
         gender: request.body.gender || user.gender,
@@ -37,7 +36,13 @@ module.exports = {
 
       return response.status(200).json(userWithoutPassword);
     } catch (error) {
-      return response.status(500).send({ message: error.message });
+      if (
+        error.name === "SequelizeValidationError" ||
+        "SequelizeDatabaseError"
+      ) {
+        return response.status(400).json({ message: error.message });
+      }
+      return response.status(500).send({ message: "Internal server error" });
     }
   },
 };

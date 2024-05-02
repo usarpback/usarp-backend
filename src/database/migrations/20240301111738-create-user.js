@@ -1,6 +1,6 @@
-'use strict';
+"use strict";
 
-const { sequelize } = require('../../models/user.model');
+const { sequelize } = require("../../models/user.model");
 
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
@@ -8,11 +8,11 @@ module.exports = {
     await queryInterface.createTable("users", {
       id: {
         type: Sequelize.UUID,
+        defaultValue: Sequelize.literal("UUID()"),
         primaryKey: true,
         allowNull: false,
-        defaultValue: Sequelize.literal('UUID()'),
       },
-      fullname: {
+      full_name: {
         type: Sequelize.STRING(100),
         allowNull: false,
       },
@@ -44,7 +44,6 @@ module.exports = {
       },
       created_at: Sequelize.DATE,
       updated_at: Sequelize.DATE,
-      deleted_at: Sequelize.DATE,
     });
   },
 

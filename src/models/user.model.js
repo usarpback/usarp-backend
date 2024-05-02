@@ -1,12 +1,12 @@
 const { Model, DataTypes } = require("sequelize");
-const { compare,hash } = require("bcrypt");
+const { compare, hash } = require("bcrypt");
 const tokenHelper = require("../helpers/token.helpers");
 
 class User extends Model {
   static init(sequelize) {
     super.init(
       {
-        fullname: {
+        fullName: {
           type: DataTypes.STRING,
           allowNull: false,
           validate: {
@@ -49,11 +49,11 @@ class User extends Model {
             isStrongPassword(value) {
               if (
                 !/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()\-_=+{};:,<.>]).{8,}/.test(
-                  value
+                  value,
                 )
               ) {
                 throw new Error(
-                  "The password must be at least 8 characters long and contain at least one lowercase letter, one uppercase letter, one number, and one special character."
+                  "The password must be at least 8 characters long and contain at least one lowercase letter, one uppercase letter, one number, and one special character.",
                 );
               }
             },
@@ -79,16 +79,31 @@ class User extends Model {
         profile: {
           type: DataTypes.STRING,
           allowNull: false,
+          validate: {
+            notNull: {
+              msg: "The profile field cannot be empty",
+            },
+            notEmpty: {
+              msg: "The profile field cannot be empty",
+            },
+          },
         },
         organization: {
           type: DataTypes.STRING,
           allowNull: false,
+          validate: {
+            notNull: {
+              msg: "The organization field cannot be empty",
+            },
+            notEmpty: {
+              msg: "The organization field cannot be empty",
+            },
+          },
         },
       },
       {
         sequelize,
         tableName: "users",
-        paranoid: false,
         hooks: {
           beforeCreate: async (user) => {
             const hashedPassword = await hash(user.password, 10);
@@ -108,7 +123,7 @@ class User extends Model {
   }
 
   generateToken(expiresIn = "4h") {
-    const data = { id: this.id, email: this.email, fullname: this.fullname };
+    const data = { id: this.id, email: this.email, fullName: this.fullName };
     return tokenHelper.generateToken(data, expiresIn);
   }
 }
