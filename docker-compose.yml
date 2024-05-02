@@ -1,0 +1,37 @@
+version: '3.9'
+services:
+  app:
+    depends_on:
+      - db
+    expose:
+      - ${NODE_PORT}
+    build: .
+    links:
+      - db
+    ports:
+      - ${NODE_PORT}:${NODE_PORT}
+    restart: always
+    stdin_open: true
+    tty: true
+    networks:
+      - docker-network
+  db:
+    image: mariadb:10.4.14
+    container_name: mariadb
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
+      MYSQL_DATABASE: ${DB_NAME}
+      MYSQL_USER: ${DB_USERNAME}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+    ports:
+      - ${DB_PORT}:${DB_PORT}
+    volumes:
+      - mariadb-data:/var/lib/mysql
+    networks:
+      - docker-network
+networks:
+  docker-network:
+    driver: bridge
+volumes:
+  mariadb-data:
