@@ -4,7 +4,7 @@
   "description": "",
   "main": "server.js",
   "scripts": {
-    "dev": "npx sequelize db:migrate && node --watch src/server.js",
+    "dev": "nodemon src/server.js",
     "test": "node --test test/",
     "test:coverage": "node --test --experimental-test-coverage test/",
     "test:debug": "node --inspect --watch --test src/server.js",
@@ -20,6 +20,7 @@
     "eslint-plugin-import": "^2.29.1",
     "eslint-plugin-n": "^16.6.2",
     "eslint-plugin-promise": "^6.1.1",
+    "nodemon": "^3.1.0",
     "prettier": "^3.2.5",
     "sequelize-cli": "^6.6.2"
   },
