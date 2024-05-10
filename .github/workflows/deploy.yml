@@ -14,19 +14,19 @@ jobs:
       - name: Checkout the files
         uses: actions/checkout@v4
 
-      - name: Docker Hub login
-        uses: docker/login-action@v3
-        with:
-          username: ${{ secrets.USERNAME_DOCKER_HUB }}
-          password: ${{ secrets.PASSWORD_DOCKER_HUB }}
+      # - name: Docker Hub login
+      #   uses: docker/login-action@v3
+      #   with:
+      #     username: ${{ secrets.USERNAME_DOCKER_HUB }}
+      #     password: ${{ secrets.PASSWORD_DOCKER_HUB }}
 
-      - name: Build and push Docker image
-        uses: docker/build-push-actions@5
-        with:
-          context: .
-          push: true
-          tags: |
-            usarpback/usarp-tool-app:latest
+      # - name: Build and push Docker image
+      #   uses: docker/build-push-actions@5
+      #   with:
+      #     context: .
+      #     push: true
+      #     tags: |
+      #       usarpback/usarp-tool-app:latest
 
       - name: Deploy to Server
         uses: easingthemes/ssh-deploy@main
