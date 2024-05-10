@@ -35,10 +35,10 @@ jobs:
           ARGS: "-rlgoDzvc -i --delete"
           SOURCE: "./"
           REMOTE_HOST: ${{ secrets.REMOTE_HOST }}
-          REMOTE_USER: ${{ secrets.REMOTE_USER }} # ec2-user   (saber qual é)
+          REMOTE_USER: ${{ secrets.REMOTE_USER }} 
           TARGET: ${{ secrets.REMOTE_TARGET }}
           EXCLUDE: "/node_modules/, **.env, .git"
 
       - name: Deploy with docker-compose
         run: |
-          ssh -i ${{ secrets.SSH_PRIVATE_KEY }} ${{ secrets.REMOTE_USER }}@${{ secrets.REMOTE_HOST }} 'docker-compose -f /path/to/docker-compose.yml up -d'
+          ssh -i ${{ secrets.SSH_PRIVATE_KEY }} ubuntu@ec2-13-58-20-24.us-east-2.compute.amazonaws.com 'docker-compose -f /path/to/docker-compose.yml up -d'
