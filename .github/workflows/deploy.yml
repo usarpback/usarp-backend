@@ -35,10 +35,11 @@ jobs:
           ARGS: "-rlgoDzvc -i --delete"
           SOURCE: "./"
           REMOTE_HOST: ${{ secrets.REMOTE_HOST }}
-          REMOTE_USER: ${{ secrets.REMOTE_USER }} 
+          REMOTE_USER: ${{ secrets.REMOTE_USER }}
           TARGET: ${{ secrets.REMOTE_TARGET }}
           EXCLUDE: "/node_modules/, **.env, .git"
 
       - name: Deploy with docker-compose
         run: |
+          chmod 400 ${{ secrets.SSH_PRIVATE_KEY }}
           ssh -i ${{ secrets.SSH_PRIVATE_KEY }} ${{ secrets.REMOTE_USER }}@${{ secrets.REMOTE_HOST }} 'docker-compose -f usarp/usarp-backend/docker-compose.yml up -d'
