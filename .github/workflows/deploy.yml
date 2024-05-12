@@ -18,11 +18,13 @@ jobs:
     steps:
       - name: Stop and remove old containers
         run: |
+          cd /home/ubuntu/usarp/usarp-backend
           docker-compose down
           docker-compose rm -f
           
       - name: Remove unused data
         run: |
+          cd /home/ubuntu/usarp/usarp-backend
           docker system prune -af
           docker volume prune -f
 
@@ -32,4 +34,5 @@ jobs:
 
       - name: Start containers with Docker Compose
         run: |
-          cd /usarp/usarp-backend/docker-compose up -d
+          cd /home/ubuntu/usarp/usarp-backend
+          docker-compose up -d
