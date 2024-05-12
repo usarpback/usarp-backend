@@ -26,7 +26,6 @@ jobs:
         run: |
           cd /home/ubuntu/usarp/usarp-backend
           docker system prune -af
-          docker volume prune -f
 
       # - name: Pull image from Docker Hub
       #   run: |
