@@ -11,15 +11,15 @@ jobs:
     steps:
       - name: Checkout the files
         uses: actions/checkout@v3
-      - name: Pull of repository
-        run: |
-          cd /home/ubuntu/usarp/usarp-backend
-          git pull origin main
 
   deploy:
     needs: build
     runs-on: [aws-ec2]
     steps:
+      - name: Pull of repository
+        run: |
+          cd /home/ubuntu/usarp/usarp-backend
+          git pull origin main
       - name: Stop and remove old containers
         run: |
           cd /home/ubuntu/usarp/usarp-backend
