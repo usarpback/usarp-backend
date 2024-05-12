@@ -32,4 +32,4 @@ jobs:
 
       - name: Start containers with Docker Compose
         run: |
-          docker-compose up -d
+          cd /usarp/usarp-backend/docker-compose up -d
