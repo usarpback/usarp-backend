@@ -11,25 +11,25 @@ jobs:
     steps:
       - name: Checkout the files
         uses: actions/checkout@v3
-
-      - name: Login to Docker Hub
-        run: docker login -u ${{ secrets.USERNAME_DOCKER_HUB }} -p ${{ secrets.PASSWORD_DOCKER_HUB }}
-
-      - name: Build docker image
-        run: docker build -t usarpback/usarp-tool-backend .
-
-      - name: Publish image to Docker Hub
-        run: docker push usarpback/usarp-tool-backend:latest
-
+        
   deploy:
     needs: build
     runs-on: [aws-ec2]
     steps:
       - name: Stop and remove old containers
-        run: docker-compose down
+        run: |
+          docker-compose down
+          docker-compose rm -f
+          
+      - name: Remove unused data
+        run: |
+          docker system prune -af
+          docker volume prune -f
 
-      - name: Pull image from Docker Hub
-        run: docker pull usarpback/usarp-tool-backend:latest
+      # - name: Pull image from Docker Hub
+      #   run: |
+      #     docker-compose pull
 
       - name: Start containers with Docker Compose
-        run: docker-compose up -d
+        run: |
+          docker-compose up -d
