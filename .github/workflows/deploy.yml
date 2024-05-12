@@ -11,6 +11,10 @@ jobs:
     steps:
       - name: Checkout the files
         uses: actions/checkout@v3
+      - name: Pull of repository
+        run: |
+          cd /home/ubuntu/usarp/usarp-backend
+          git pull origin main
 
   deploy:
     needs: build
@@ -18,13 +22,13 @@ jobs:
     steps:
       - name: Stop and remove old containers
         run: |
-          cd /usarp-backend
+          cd /home/ubuntu/usarp/usarp-backend
           docker-compose down
           docker-compose rm -f
 
       - name: Remove unused data
         run: |
-          cd /usarp-backend
+          cd /home/ubuntu/usarp/usarp-backend
           docker system prune -af
 
       # - name: Pull image from Docker Hub
@@ -33,5 +37,5 @@ jobs:
 
       - name: Start containers with Docker Compose
         run: |
-          cd /usarp-backend
+          cd /home/ubuntu/usarp/usarp-backend
           docker-compose up -d
