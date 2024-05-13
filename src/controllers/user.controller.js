@@ -10,6 +10,24 @@ module.exports = {
     }
   },
 
+  async getUserById(request, response) {
+    try {
+      const userId = request.userId;
+
+      const user = await UserModel.findByPk(userId);
+
+      if (!user) {
+        return response.status(404).json({ message: "User not found" });
+      }
+
+      const { password: omit, ...userWithoutPassword } = user.toJSON();
+
+      return response.status(200).json(userWithoutPassword);
+    } catch (error) {
+      return response.status(500).json({ message: "Internal server error" });
+    }
+  },
+
   async updateUser(request, response) {
     try {
       const userId = request.userId;
