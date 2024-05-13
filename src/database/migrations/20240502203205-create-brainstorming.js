@@ -10,6 +10,10 @@ module.exports = {
         allowNull: false,
         primaryKey: true,
       },
+      creator_id: {
+        type: Sequelize.UUID,
+        allowNull: false,
+      },
       brainstorming_title: {
         type: Sequelize.STRING(255),
         allowNull: false,

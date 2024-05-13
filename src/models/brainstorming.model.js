@@ -10,6 +10,10 @@ class Brainstorming extends Model {
           allowNull: false,
           primaryKey: true,
         },
+        creatorId: {
+          type: DataTypes.UUID,
+          allowNull: false,
+        },
         brainstormingTitle: {
           type: DataTypes.STRING,
           allowNull: false,

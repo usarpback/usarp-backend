@@ -3,6 +3,7 @@ const Brainstorming = require("../models/brainstorming.model");
 module.exports = {
   async createBrainstorming(request, response) {
     const {
+      creatorId,
       brainstormingTitle,
       project,
       brainstormingDate,
@@ -11,6 +12,7 @@ module.exports = {
     } = request.body;
     try {
       const brainstorming = await Brainstorming.create({
+        creatorId,
         brainstormingTitle,
         project,
         brainstormingDate,
