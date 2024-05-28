@@ -23,8 +23,13 @@ class App {
     this.express.use(express.urlencoded({ extended: true }));
 
     // enable cors
-    this.express.use(cors());
-    this.express.options("*", cors());
+    const corsOptions = {
+      origin: process.env.CORS_ORIGIN || "http://localhost:3000",
+      methods: ["GET", "POST", "PUT", "DELETE"],
+      allowedHeaders: ["Content-Type", "Authorization"],
+    };
+
+    this.express.use(cors(corsOptions));
   }
 
   routes() {
