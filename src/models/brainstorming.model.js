@@ -1,4 +1,5 @@
 const { Model, DataTypes } = require("sequelize");
+const { parse, isValid, format } = require("date-fns");
 
 class Brainstorming extends Model {
   static init(sequelize) {
@@ -19,10 +20,14 @@ class Brainstorming extends Model {
           allowNull: false,
           validate: {
             notNull: {
-              msg: "The brainstorming title  field cannot be empty",
+              msg: "The 'Brainstorming title'  field cannot be empty",
             },
             notEmpty: {
-              msg: "The brainstorming title field cannot be empty",
+              msg: "The 'Brainstorming title' field cannot be empty",
+            },
+            is: {
+              args: /^[\p{L}0-9!@#$%^&*ç()_\-+=\[\]{}\\|:;'"<> ]+$/iu,
+              msg: "The brainstorming title contains invalid characters",
             },
           },
         },
@@ -31,34 +36,53 @@ class Brainstorming extends Model {
           allowNull: false,
           validate: {
             notNull: {
-              msg: "The project field cannot be empty",
+              msg: "The 'Project' field cannot be empty",
             },
             notEmpty: {
-              msg: "The project field cannot be empty",
+              msg: "The 'Project' field cannot be empty",
             },
           },
         },
         brainstormingDate: {
-          type: DataTypes.DATEONLY,
+          type: DataTypes.STRING,
           allowNull: false,
           validate: {
             notNull: {
-              msg: "The brainstorming date field cannot be empty",
+              msg: "The 'Brainstorming date' field cannot be empty",
             },
             notEmpty: {
-              msg: "The brainstorming date field cannot be empty",
+              msg: "The 'Brainstorming date' field cannot be empty",
+            },
+            isValidDate(value) {
+              const parsedDate = parse(value, "dd/MM/yyyy", new Date());
+              if (
+                !isValid(parsedDate) ||
+                format(parsedDate, "dd/MM/yyyy") !== value
+              ) {
+                throw new Error(
+                  "The 'Brainstorming date' field must be a valid date and in the format DD/MM/AAAA.",
+                );
+              }
             },
           },
         },
         brainstormingTime: {
-          type: DataTypes.TIME,
+          type: DataTypes.STRING,
           allowNull: false,
           validate: {
             notNull: {
-              msg: "The brainstorming time cannot be empty",
+              msg: "The 'Brainstorming time' cannot be empty",
             },
             notEmpty: {
-              msg: "The brainstorming time cannot be empty",
+              msg: "The 'Brainstorming time' cannot be empty",
+            },
+            isValidTime(value) {
+              const timeRegex = /^([01]\d|2[0-3]):([0-5]\d)$/;
+              if (!timeRegex.test(value)) {
+                throw new Error(
+                  "The 'Brainstorming time' field must be in the format HH:MM and represent a valid time.",
+                );
+              }
             },
           },
         },
@@ -67,10 +91,10 @@ class Brainstorming extends Model {
           allowNull: false,
           validate: {
             notNull: {
-              msg: "The user stories field cannot be empty",
+              msg: "The 'User stories' field cannot be empty",
             },
             notEmpty: {
-              msg: "The user stories field cannot be empty",
+              msg: "The 'User stories' field cannot be empty",
             },
           },
         },

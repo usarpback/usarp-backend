@@ -1,4 +1,5 @@
 const UserModel = require("../models/user.model");
+const { ValidationError } = require("sequelize");
 
 module.exports = {
   async signup(request, response) {
@@ -26,11 +27,12 @@ module.exports = {
 
       return response.status(201).json(userWithoutPassword);
     } catch (error) {
-      if (
-        error.name === "SequelizeValidationError" ||
-        "SequelizeDatabaseError"
-      ) {
-        return response.status(400).json({ message: error.message });
+      if (error instanceof ValidationError) {
+        const validationErrors = error.errors.map((err) => err.message);
+        return response.status(400).json({
+          message: "Validation errors",
+          errors: validationErrors,
+        });
       }
       return response.status(500).json({ message: "Internal server error" });
     }

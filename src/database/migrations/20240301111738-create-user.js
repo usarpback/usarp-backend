@@ -11,36 +11,126 @@ module.exports = {
         defaultValue: Sequelize.literal("UUID()"),
         primaryKey: true,
         allowNull: false,
-      },
-      full_name: {
-        type: Sequelize.STRING(100),
-        allowNull: false,
-      },
-      email: {
-        type: Sequelize.STRING(100),
-        allowNull: false,
         unique: true,
       },
-      password: {
-        type: Sequelize.STRING(100),
+      full_name: {
+        type: Sequelize.STRING,
         allowNull: false,
+        validate: {
+          notNull: {
+            msg: "The 'Full Name' field is required.",
+          },
+          notEmpty: {
+            msg: "The 'Full Name' field cannot be empty",
+          },
+          isAlpha: {
+            msg: "The full name must contain only uppercase and lowercase letters.",
+          },
+        },
+      },
+      email: {
+        type: Sequelize.STRING,
+        allowNull: false,
+        unique: true,
+        validate: {
+          notNull: {
+            msg: "The 'email' field is required.",
+          },
+          notEmpty: {
+            msg: "The 'email' field cannot be empty",
+          },
+          isEmail: {
+            msg: "The email is invalid",
+          },
+          is: {
+            args: /^[a-zA-Z0-9!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9-]+\.[a-zA-Z]{2,}$/i,
+            msg: "The member email contains invalid characters or format",
+          },
+        },
+      },
+      password: {
+        type: Sequelize.STRING,
+        allowNull: false,
+        validate: {
+          notNull: {
+            msg: "The 'password' field is required.",
+          },
+          notEmpty: {
+            msg: "The 'password' field cannot be empty",
+          },
+        },
       },
       gender: {
-        type: Sequelize.ENUM("male", "female", "not_specified"),
+        type: Sequelize.ENUM(
+          "Feminino",
+          "Masculino",
+          "Não binário",
+          "Prefiro não informar",
+        ),
         allowNull: false,
-        defaultValue: "not_specified",
+        defaultValue: "Prefiro não informar",
+        validate: {
+          isIn: {
+            args: [
+              ["Feminino", "Masculino", "Não binário", "Prefiro não informar"],
+            ],
+            msg: "Gender must be 'Feminino', 'Masculino', 'Não binário', or 'Prefiro não informar'.",
+          },
+        },
       },
       birthdate: {
-        type: Sequelize.DATEONLY,
+        type: Sequelize.STRING,
         allowNull: false,
+        validate: {
+          notNull: {
+            msg: "The 'birth date' field is required.",
+          },
+          notEmpty: {
+            msg: "The 'birth date' field cannot be empty",
+          },
+        },
       },
       profile: {
-        type: Sequelize.STRING(100),
+        type: Sequelize.ENUM(
+          "Estudante de Graduação",
+          "Estudante de Pós",
+          "Estudante de Mestrado",
+          "Doutorando",
+          "Professor de Graduação",
+          "Professor de Pós",
+          "Professor de Mestrado",
+          "Profissional do Mercado",
+        ),
         allowNull: false,
+        validate: {
+          isIn: {
+            args: [
+              [
+                "Estudante de Graduação",
+                "Estudante de Pós",
+                "Estudante de Mestrado",
+                "Doutorando",
+                "Professor de Graduação",
+                "Professor de Pós",
+                "Professor de Mestrado",
+                "Profissional do Mercado",
+              ],
+            ],
+            msg: "The profile must be one of the following: 'Estudante de Graduação', 'Estudante de Pós', 'Estudante de Mestrado', 'Doutorando', 'Professor de Graduação', 'Professor de Pós', 'Professor de Mestrado' ou 'Profissional do Mercado'.",
+          },
+        },
       },
       organization: {
-        type: Sequelize.STRING(100),
+        type: Sequelize.STRING,
         allowNull: false,
+        validate: {
+          notNull: {
+            msg: "The 'Organization' field is required.",
+          },
+          notEmpty: {
+            msg: "The 'Organization' field cannot be empty",
+          },
+        },
       },
       created_at: Sequelize.DATE,
       updated_at: Sequelize.DATE,

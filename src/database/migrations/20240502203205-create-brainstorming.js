@@ -15,23 +15,23 @@ module.exports = {
         allowNull: false,
       },
       brainstorming_title: {
-        type: Sequelize.STRING(255),
+        type: Sequelize.STRING,
         allowNull: false,
       },
       project: {
-        type: Sequelize.STRING(255),
+        type: Sequelize.STRING,
         allowNull: false,
       },
       brainstorming_date: {
-        type: Sequelize.DATEONLY,
+        type: Sequelize.STRING,
         allowNull: false,
       },
       brainstorming_time: {
-        type: Sequelize.TIME,
+        type: Sequelize.STRING,
         allowNull: false,
       },
       user_stories: {
-        type: Sequelize.STRING(255),
+        type: Sequelize.STRING,
         allowNull: false,
       },
       created_at: Sequelize.DATE,
