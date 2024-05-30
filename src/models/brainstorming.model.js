@@ -2,6 +2,13 @@ const { Model, DataTypes } = require("sequelize");
 const { parse, isValid, format } = require("date-fns");
 
 class Brainstorming extends Model {
+  static associate(models) {
+    this.belongsToMany(models.Project, {
+      through: "BrainstormingProject",
+      foreignKey: "brainstormingId",
+      as: "projects",
+    });
+  }
   static init(sequelize) {
     super.init(
       {
@@ -12,7 +19,7 @@ class Brainstorming extends Model {
           primaryKey: true,
         },
         creatorId: {
-          type: DataTypes.UUID,
+          type: DataTypes.STRING,
           allowNull: false,
         },
         brainstormingTitle: {

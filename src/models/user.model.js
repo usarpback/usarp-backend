@@ -14,6 +14,13 @@ class User extends Model {
   static init(sequelize) {
     super.init(
       {
+        id: {
+          type: DataTypes.UUID,
+          defaultValue: DataTypes.UUIDV4,
+          allowNull: false,
+          primaryKey: true,
+          unique: true,
+        },
         fullName: {
           type: DataTypes.STRING,
           allowNull: false,
@@ -177,6 +184,7 @@ class User extends Model {
       },
       {
         sequelize,
+        modelName: "Users",
         tableName: "users",
         hooks: {
           beforeCreate: async (user) => {

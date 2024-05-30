@@ -6,12 +6,12 @@ module.exports = {
     await queryInterface.createTable("brainstormings", {
       id: {
         type: Sequelize.UUID,
-        defaultValue: Sequelize.literal("UUID()"),
+        defaultValue: Sequelize.UUIDV4,
         allowNull: false,
         primaryKey: true,
       },
       creator_id: {
-        type: Sequelize.UUID,
+        type: Sequelize.STRING,
         allowNull: false,
       },
       brainstorming_title: {

@@ -14,8 +14,7 @@ module.exports = {
     const creatorId = request.userId;
 
     try {
-      // REVISAR ESSA CONSULTA
-      const projectExists = await Project.findAll({
+      const projectExists = await Project.findOne({
         where: { id: project, creatorId: creatorId },
       });
 
