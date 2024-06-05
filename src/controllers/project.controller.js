@@ -80,7 +80,7 @@ module.exports = {
         },
       });
 
-      if (!getAllUserCreatedProjects) {
+      if (getAllUserCreatedProjects.length === 0) {
         return response
           .status(404)
           .json({ message: "No user-created projects yet" });

@@ -63,11 +63,12 @@ module.exports = {
         },
       });
 
-      if (!getAllBrainstormingsAndCount) {
+      if (getAllBrainstormingsAndCount.count === 0) {
         return response
           .status(404)
-          .json({ message: "No brainstorming created on the project yet" });
+          .json({ message: "No brainstormings created by this user yet" });
       }
+
       return response.status(200).json({ getAllBrainstormingsAndCount });
     } catch (error) {
       return response.status(500).json({ message: "Internal server error" });
