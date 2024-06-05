@@ -7,4 +7,9 @@ BrainstormingRoutes.post(
   BrainstormingController.createBrainstorming,
 );
 
+BrainstormingRoutes.get(
+  "/brainstorming/countAllBrainstormings",
+  BrainstormingController.getAllBrainstormingsAndCount,
+);
+
 module.exports = BrainstormingRoutes;

@@ -5,7 +5,13 @@ module.exports = {
   async getAllUsers(request, response) {
     try {
       const users = await UserModel.findAll();
-      return response.status(200).json({ users });
+
+      const usersWithoutPassword = users.map((user) => {
+        const { password: omit, ...userWithoutPassword } = user.toJSON();
+        return userWithoutPassword;
+      });
+
+      return response.status(200).json({ users: usersWithoutPassword });
     } catch (error) {
       return response.status(500).json({ message: "Internal server error" });
     }
@@ -55,7 +61,6 @@ module.exports = {
 
       return response.status(200).json(userWithoutPassword);
     } catch (error) {
-      console.log(error);
       if (error instanceof ValidationError) {
         const validationErrors = error.errors.map((err) => err.message);
         return response.status(400).json({

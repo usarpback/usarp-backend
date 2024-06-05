@@ -130,7 +130,20 @@ module.exports = {
           notEmpty: {
             msg: "The 'Organization' field cannot be empty",
           },
+          is: {
+            args: /^[\p{L}0-9!@#$%^&*ç()_\-+=\[\]{}\\|:;'"<> ]+$/iu,
+            msg: "The 'Organization' field contains invalid characters",
+          },
         },
+      },
+      login_attempts: {
+        type: Sequelize.INTEGER,
+        allowNull: true,
+        defaultValue: 0,
+      },
+      lock_until: {
+        type: Sequelize.DATE,
+        allowNull: true,
       },
       created_at: Sequelize.DATE,
       updated_at: Sequelize.DATE,

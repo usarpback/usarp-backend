@@ -1,9 +1,8 @@
-/* eslint-disable no-unused-vars */
 const jwt = require("jsonwebtoken");
 const { secret } = require("../config/auth.config");
 
 module.exports = {
-  generateToken(data, expiresIn = "4h") {
+  generateToken(data, expiresIn = "5d") {
     const options = {
       expiresIn,
     };

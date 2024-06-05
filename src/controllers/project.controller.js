@@ -21,31 +21,29 @@ module.exports = {
       );
       const teamMembers = [];
 
-      const memberCreations = projectTeam.map(async (member) => {
+      for (const member of projectTeam) {
         const { email, roleInProject } = member;
 
         const user = await User.findOne({ where: { email } });
 
         if (!user) {
+          await t.rollback();
           return response.status(400).json({
-            message: `User with email ${email} not found.`,
+            message: `User with email '${email}' not found.`,
           });
         }
 
-        // REVISAR ESSA CONSULTA
-        // const existingMember = await ProjectUser.findOne({
-        //   where: { memberEmail: email, projectId: project.id },
-        //   transaction: t,
-        // });
+        const existingMember = await ProjectUser.findOne({
+          where: { memberEmail: email, projectId: project.id },
+          transaction: t,
+        });
 
-        // console.log(existingMember);
-
-        // if (existingMember) {
-        //   await t.rollback();
-        //   return response.status(400).json({
-        //     message: `Email address ${email} has already been invited to the project. Please enter a different email.`,
-        //   });
-        // }
+        if (existingMember) {
+          await t.rollback();
+          return response.status(400).json({
+            message: `Email address '${email}' has already been invited to the project. Please enter a different email.`,
+          });
+        }
 
         await ProjectUser.create(
           { projectId: project.id, memberEmail: email, roleInProject },
@@ -53,9 +51,7 @@ module.exports = {
         );
 
         teamMembers.push({ email, roleInProject });
-      });
-
-      await Promise.all(memberCreations);
+      }
 
       await t.commit();
 
@@ -73,6 +69,26 @@ module.exports = {
         });
       }
       return response.status(500).json({ message: error.message });
+    }
+  },
+
+  async getAllUserCreatedProjects(request, response) {
+    try {
+      const getAllUserCreatedProjects = await Project.findAll({
+        where: {
+          creatorId: request.userId,
+        },
+      });
+
+      if (!getAllUserCreatedProjects) {
+        return response
+          .status(404)
+          .json({ message: "No user-created projects yet" });
+      }
+
+      return response.status(200).json({ getAllUserCreatedProjects });
+    } catch (error) {
+      return response.status(500).json({ message: "Internal server error" });
     }
   },
 };

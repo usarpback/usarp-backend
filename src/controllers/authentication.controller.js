@@ -1,5 +1,6 @@
 const UserModel = require("../models/user.model");
 const { ValidationError } = require("sequelize");
+const { addMinutes, isAfter } = require("date-fns");
 
 module.exports = {
   async signup(request, response) {
@@ -40,11 +41,8 @@ module.exports = {
   async signin(request, response) {
     const { email, password } = request.body;
     try {
-      // Find user by email address
       const user = await UserModel.findOne({
-        where: {
-          email,
-        },
+        where: { email },
       });
 
       if (!user) {
@@ -53,14 +51,32 @@ module.exports = {
           .json({ message: "Invalid email and/or password" });
       }
 
+      if (user.lockUntil && isAfter(new Date(), user.lockUntil)) {
+        user.loginAttempts = 0;
+        user.lockUntil = null;
+        await user.save();
+      } else if (user.lockUntil) {
+        return response.status(403).json({
+          message: "Account is locked. Please try again in 10 minutes.",
+        });
+      }
+
       const isPasswordValid = await user.validatePassword(password);
       if (!isPasswordValid) {
+        user.loginAttempts += 1;
+        if (user.loginAttempts >= 3) {
+          user.lockUntil = addMinutes(new Date(), 10);
+        }
+        await user.save();
         return response
           .status(400)
           .json({ message: "Invalid email and/or password" });
       }
 
-      // Generate and return token
+      user.loginAttempts = 0;
+      user.lockUntil = null;
+      await user.save();
+
       const token = user.generateToken();
       return response.status(200).json({ token });
     } catch (error) {

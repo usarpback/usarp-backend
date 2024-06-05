@@ -31,10 +31,6 @@ jobs:
           cd /home/ubuntu/usarp/usarp-backend
           docker system prune -af
 
-      # - name: Pull image from Docker Hub
-      #   run: |
-      #     docker-compose pull
-
       - name: Start containers with Docker Compose
         run: |
           cd /home/ubuntu/usarp/usarp-backend

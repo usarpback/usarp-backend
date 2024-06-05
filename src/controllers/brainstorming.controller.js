@@ -1,4 +1,5 @@
 const Brainstorming = require("../models/brainstorming.model");
+const BrainstormingProject = require("../models/brainstormingProject.model");
 const Project = require("../models/project.model");
 const { ValidationError } = require("sequelize");
 
@@ -34,6 +35,11 @@ module.exports = {
         userStories,
       });
 
+      await BrainstormingProject.create({
+        projectId: project,
+        brainstormingId: brainstorming.id,
+      });
+
       return response.status(201).json(brainstorming);
     } catch (error) {
       if (error instanceof ValidationError) {
@@ -42,7 +48,28 @@ module.exports = {
           message: "Validation error",
           errors: validationErrors,
         });
+      } else if (error.message) {
+        return response.status(400).json({ message: error.message });
       }
+      return response.status(500).json({ message: "Internal server error" });
+    }
+  },
+
+  async getAllBrainstormingsAndCount(request, response) {
+    try {
+      const getAllBrainstormingsAndCount = await Brainstorming.findAndCountAll({
+        where: {
+          creatorId: request.userId,
+        },
+      });
+
+      if (!getAllBrainstormingsAndCount) {
+        return response
+          .status(404)
+          .json({ message: "No brainstorming created on the project yet" });
+      }
+      return response.status(200).json({ getAllBrainstormingsAndCount });
+    } catch (error) {
       return response.status(500).json({ message: "Internal server error" });
     }
   },

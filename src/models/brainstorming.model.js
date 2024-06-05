@@ -1,5 +1,6 @@
 const { Model, DataTypes } = require("sequelize");
 const { parse, isValid, format } = require("date-fns");
+const validateDateTimeInFuture = require("../helpers/dateAndTimeFuture");
 
 class Brainstorming extends Model {
   static associate(models) {
@@ -9,6 +10,7 @@ class Brainstorming extends Model {
       as: "projects",
     });
   }
+
   static init(sequelize) {
     super.init(
       {
@@ -27,7 +29,7 @@ class Brainstorming extends Model {
           allowNull: false,
           validate: {
             notNull: {
-              msg: "The 'Brainstorming title'  field cannot be empty",
+              msg: "The 'Brainstorming title' field cannot be empty",
             },
             notEmpty: {
               msg: "The 'Brainstorming title' field cannot be empty",
@@ -110,6 +112,14 @@ class Brainstorming extends Model {
         sequelize,
         modelName: "Brainstorming",
         tableName: "brainstormings",
+        hooks: {
+          beforeValidate(brainstorming) {
+            validateDateTimeInFuture(
+              brainstorming.brainstormingDate,
+              brainstorming.brainstormingTime,
+            );
+          },
+        },
       },
     );
   }

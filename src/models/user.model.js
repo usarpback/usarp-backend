@@ -179,7 +179,20 @@ class User extends Model {
             notEmpty: {
               msg: "The 'Organization' field cannot be empty",
             },
+            is: {
+              args: /^[\p{L}0-9!@#$%^&*ç()_\-+=\[\]{}\\|:;'"<> ]+$/iu,
+              msg: "The 'Organization' field contains invalid characters",
+            },
           },
+        },
+        loginAttempts: {
+          type: DataTypes.INTEGER,
+          allowNull: true,
+          defaultValue: 0,
+        },
+        lockUntil: {
+          type: DataTypes.DATE,
+          allowNull: true,
         },
       },
       {
@@ -188,12 +201,16 @@ class User extends Model {
         tableName: "users",
         hooks: {
           beforeCreate: async (user) => {
-            const hashedPassword = await hash(user.password, 10);
-            user.password = hashedPassword;
+            if (user.changed("password")) {
+              const hashedPassword = await hash(user.password, 10);
+              user.password = hashedPassword;
+            }
           },
           beforeUpdate: async (user) => {
-            const hashedPassword = await hash(user.password, 10);
-            user.password = hashedPassword;
+            if (user.changed("password")) {
+              const hashedPassword = await hash(user.password, 10);
+              user.password = hashedPassword;
+            }
           },
         },
       },
@@ -204,7 +221,7 @@ class User extends Model {
     return compare(password, this.password);
   }
 
-  generateToken(expiresIn = "4h") {
+  generateToken(expiresIn = "5d") {
     const data = { id: this.id, email: this.email, fullName: this.fullName };
     return tokenHelper.generateToken(data, expiresIn);
   }
