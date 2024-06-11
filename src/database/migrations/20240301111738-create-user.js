@@ -145,6 +145,16 @@ module.exports = {
         type: Sequelize.DATE,
         allowNull: true,
       },
+      reset_password_token: {
+        type: Sequelize.STRING,
+        allowNull: true,
+        defaultValue: null,
+      },
+      reset_password_expires: {
+        type: Sequelize.DATE,
+        allowNull: true,
+        defaultValue: null,
+      },
       created_at: Sequelize.DATE,
       updated_at: Sequelize.DATE,
     });
