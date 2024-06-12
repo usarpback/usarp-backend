@@ -23,6 +23,7 @@ services:
       DB_PASSWORD: ${DB_PASSWORD}
       DB_HOST: ${DB_HOST}
       DIALECT: ${DIALECT}
+      CORS_ORIGIN: ${CORS_ORIGIN}
     restart: always
     stdin_open: true
     tty: true
