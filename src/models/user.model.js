@@ -135,31 +135,23 @@ class User extends Model {
         },
         profile: {
           type: DataTypes.ENUM(
-            "Estudante de Graduação",
-            "Estudante de Pós",
-            "Estudante de Mestrado",
-            "Doutorando",
-            "Professor de Graduação",
-            "Professor de Pós",
-            "Professor de Mestrado",
-            "Profissional do Mercado",
+            "Estudante de graduação",
+            "Estudante de Pós-graduação",
+            "Professor",
+            "Profissional da Indústria",
           ),
           allowNull: false,
           validate: {
             isIn: {
               args: [
                 [
-                  "Estudante de Graduação",
-                  "Estudante de Pós",
-                  "Estudante de Mestrado",
-                  "Doutorando",
-                  "Professor de Graduação",
-                  "Professor de Pós",
-                  "Professor de Mestrado",
-                  "Profissional do Mercado",
+                  "Estudante de graduação",
+                  "Estudante de Pós-graduação",
+                  "Professor",
+                  "Profissional da Indústria",
                 ],
               ],
-              msg: "The profile must be one of the following: 'Estudante de Graduação', 'Estudante de Pós', 'Estudante de Mestrado', 'Doutorando', 'Professor de Graduação', 'Professor de Pós', 'Professor de Mestrado' ou 'Profissional do Mercado'.",
+              msg: "The profile must be one of the following: 'Estudante de graduação', 'Estudante de Pós-graduação', 'Professor', 'Profissional da Indústria'.",
             },
             notNull: {
               msg: "The 'Profile' field is required.",
