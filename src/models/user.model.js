@@ -1,6 +1,6 @@
 const { Model, DataTypes } = require("sequelize");
-const { compare, hash } = require("bcrypt");
-const { parse, isValid, format } = require("date-fns");
+const bcrypt = require("bcrypt");
+const datefns = require("date-fns");
 const tokenHelper = require("../helpers/token.helpers");
 
 class User extends Model {
@@ -121,10 +121,10 @@ class User extends Model {
               msg: "The 'birth date' field cannot be empty",
             },
             isValidDate(value) {
-              const parsedDate = parse(value, "dd/MM/yyyy", new Date());
+              const parsedDate = datefns.parse(value, "dd/MM/yyyy", new Date());
               if (
-                !isValid(parsedDate) ||
-                format(parsedDate, "dd/MM/yyyy") !== value
+                !datefns.isValid(parsedDate) ||
+                datefns.format(parsedDate, "dd/MM/yyyy") !== value
               ) {
                 throw new Error(
                   "The 'birth date' field must be a valid date and in the format DD/MM/AAAA.",
@@ -194,13 +194,13 @@ class User extends Model {
         hooks: {
           beforeCreate: async (user) => {
             if (user.changed("password")) {
-              const hashedPassword = await hash(user.password, 10);
+              const hashedPassword = await bcrypt.hash(user.password, 10);
               user.password = hashedPassword;
             }
           },
           beforeUpdate: async (user) => {
             if (user.changed("password")) {
-              const hashedPassword = await hash(user.password, 10);
+              const hashedPassword = await bcrypt.hash(user.password, 10);
               user.password = hashedPassword;
             }
           },
@@ -210,7 +210,7 @@ class User extends Model {
   }
 
   validatePassword(password) {
-    return compare(password, this.password);
+    return bcrypt.compare(password, this.password);
   }
 
   generateToken(expiresIn = "5d") {
