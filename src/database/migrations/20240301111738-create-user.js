@@ -23,7 +23,8 @@ module.exports = {
           notEmpty: {
             msg: "The 'Full Name' field cannot be empty",
           },
-          isAlpha: {
+          is: {
+            args: /^[a-zA-ZÀ-ÿ\s]+$/,
             msg: "The full name must contain only uppercase and lowercase letters.",
           },
         },
@@ -92,8 +93,8 @@ module.exports = {
       },
       profile: {
         type: Sequelize.ENUM(
-          "Estudante de graduação",
-          "Estudante de Pós-graduação",
+          "Estudante de Graduação",
+          "Estudante de Pós-Graduação",
           "Professor",
           "Profissional da Indústria",
         ),
@@ -102,13 +103,13 @@ module.exports = {
           isIn: {
             args: [
               [
-                "Estudante de graduação",
-                "Estudante de Pós-graduação",
+                "Estudante de Graduação",
+                "Estudante de Pós-Graduação",
                 "Professor",
                 "Profissional da Indústria",
               ],
             ],
-            msg: "The profile must be one of the following: 'Estudante de graduação', 'Estudante de Pós-graduação', 'Professor', 'Profissional da Indústria'.",
+            msg: "The profile must be one of the following: 'Estudante de Graduação', 'Estudante de Pós-Graduação', 'Professor', 'Profissional da Indústria'.",
           },
           notNull: {
             msg: "The 'Profile' field is required.",

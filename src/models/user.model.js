@@ -31,7 +31,8 @@ class User extends Model {
             notEmpty: {
               msg: "The 'Full Name' field cannot be empty",
             },
-            isAlpha: {
+            is: {
+              args: /^[a-zA-ZÀ-ÿ\s]+$/,
               msg: "The full name must contain only uppercase and lowercase letters.",
             },
           },
@@ -135,8 +136,8 @@ class User extends Model {
         },
         profile: {
           type: DataTypes.ENUM(
-            "Estudante de graduação",
-            "Estudante de Pós-graduação",
+            "Estudante de Graduação",
+            "Estudante de Pós-Graduação",
             "Professor",
             "Profissional da Indústria",
           ),
@@ -145,13 +146,13 @@ class User extends Model {
             isIn: {
               args: [
                 [
-                  "Estudante de graduação",
-                  "Estudante de Pós-graduação",
+                  "Estudante de Graduação",
+                  "Estudante de Pós-Graduação",
                   "Professor",
                   "Profissional da Indústria",
                 ],
               ],
-              msg: "The profile must be one of the following: 'Estudante de graduação', 'Estudante de Pós-graduação', 'Professor', 'Profissional da Indústria'.",
+              msg: "The profile must be one of the following: 'Estudante de Graduação', 'Estudante de Pós-Graduação', 'Professor', 'Profissional da Indústria'.",
             },
             notNull: {
               msg: "The 'Profile' field is required.",
