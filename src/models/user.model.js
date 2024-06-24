@@ -1,6 +1,6 @@
 const { Model, DataTypes } = require("sequelize");
-const { compare, hash } = require("bcrypt");
-const { parse, isValid, format } = require("date-fns");
+const bcrypt = require("bcrypt");
+const datefns = require("date-fns");
 const tokenHelper = require("../helpers/token.helpers");
 
 class User extends Model {
@@ -31,7 +31,8 @@ class User extends Model {
             notEmpty: {
               msg: "The 'Full Name' field cannot be empty",
             },
-            isAlpha: {
+            is: {
+              args: /^[a-zA-ZÀ-ÿ\s]+$/,
               msg: "The full name must contain only uppercase and lowercase letters.",
             },
           },
@@ -121,10 +122,10 @@ class User extends Model {
               msg: "The 'birth date' field cannot be empty",
             },
             isValidDate(value) {
-              const parsedDate = parse(value, "dd/MM/yyyy", new Date());
+              const parsedDate = datefns.parse(value, "dd/MM/yyyy", new Date());
               if (
-                !isValid(parsedDate) ||
-                format(parsedDate, "dd/MM/yyyy") !== value
+                !datefns.isValid(parsedDate) ||
+                datefns.format(parsedDate, "dd/MM/yyyy") !== value
               ) {
                 throw new Error(
                   "The 'birth date' field must be a valid date and in the format DD/MM/AAAA.",
@@ -136,13 +137,9 @@ class User extends Model {
         profile: {
           type: DataTypes.ENUM(
             "Estudante de Graduação",
-            "Estudante de Pós",
-            "Estudante de Mestrado",
-            "Doutorando",
-            "Professor de Graduação",
-            "Professor de Pós",
-            "Professor de Mestrado",
-            "Profissional do Mercado",
+            "Estudante de Pós-Graduação",
+            "Professor",
+            "Profissional da Indústria",
           ),
           allowNull: false,
           validate: {
@@ -150,16 +147,12 @@ class User extends Model {
               args: [
                 [
                   "Estudante de Graduação",
-                  "Estudante de Pós",
-                  "Estudante de Mestrado",
-                  "Doutorando",
-                  "Professor de Graduação",
-                  "Professor de Pós",
-                  "Professor de Mestrado",
-                  "Profissional do Mercado",
+                  "Estudante de Pós-Graduação",
+                  "Professor",
+                  "Profissional da Indústria",
                 ],
               ],
-              msg: "The profile must be one of the following: 'Estudante de Graduação', 'Estudante de Pós', 'Estudante de Mestrado', 'Doutorando', 'Professor de Graduação', 'Professor de Pós', 'Professor de Mestrado' ou 'Profissional do Mercado'.",
+              msg: "The profile must be one of the following: 'Estudante de Graduação', 'Estudante de Pós-Graduação', 'Professor', 'Profissional da Indústria'.",
             },
             notNull: {
               msg: "The 'Profile' field is required.",
@@ -212,13 +205,13 @@ class User extends Model {
         hooks: {
           beforeCreate: async (user) => {
             if (user.changed("password")) {
-              const hashedPassword = await hash(user.password, 10);
+              const hashedPassword = await bcrypt.hash(user.password, 10);
               user.password = hashedPassword;
             }
           },
           beforeUpdate: async (user) => {
             if (user.changed("password")) {
-              const hashedPassword = await hash(user.password, 10);
+              const hashedPassword = await bcrypt.hash(user.password, 10);
               user.password = hashedPassword;
             }
           },
@@ -228,7 +221,7 @@ class User extends Model {
   }
 
   validatePassword(password) {
-    return compare(password, this.password);
+    return bcrypt.compare(password, this.password);
   }
 
   generateToken(expiresIn = "5d") {
