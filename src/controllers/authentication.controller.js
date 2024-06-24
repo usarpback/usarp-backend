@@ -1,4 +1,5 @@
 const UserModel = require("../models/user.model");
+const mailer = require("../config/mailer");
 const { ValidationError } = require("sequelize");
 const { addMinutes, isAfter } = require("date-fns");
 
@@ -80,6 +81,83 @@ module.exports = {
       const token = user.generateToken();
       return response.status(200).json({ token });
     } catch (error) {
+      return response.status(500).json({ message: "Internal server error" });
+    }
+  },
+  async forgot_password(request, response) {
+    const { email } = request.body;
+    const now = new Date();
+    now.setMinutes(now.getMinutes() + 30);
+
+    try{
+      // Find user by email address
+      const user = await UserModel.findOne({
+        where: {
+          email,
+        },
+      });
+
+      if (!user) {
+        return response
+          .status(400)
+          .json({ message: "Invalid email" });
+      }
+
+      // Generate and return token
+      const token = user.generateToken(expiresIn = '30m');
+      const reset_link = `localhost:3333/auth/reset_password/${user.id}/${token}`;
+
+      mailer.sendMail({
+        to: email,
+        from : 'usarpback@gmail.com',
+        template: 'forgot_password',
+        subject: 'Password Reset Request',
+        context: { reset_link },
+      })
+
+      user.resetPasswordToken = token;
+      user.resetPasswordExpires = now;
+      await user.save();
+
+      return response.status(200).json({ message: "The recovery email was sent to the user"});
+    } catch(error) {
+      return response.status(500).json({ message: "Internal server error" });
+    }
+  },
+  async reset_password(request, response) {
+    const { password } = request.body;
+    const { token, userId } = request.params;
+    const now = new Date();
+
+    try{
+      const user = await UserModel.findByPk(userId);
+
+      if (!user) {
+        return response.status(404).json({ message: "User not found" });
+      }
+
+      if (token != user.resetPasswordToken) {
+        return response.status(400).json({ message: "Invalid token" });
+      }
+
+      if (now > user.resetPasswordExpires) {
+        return response.status(400).json({ message: "Token expired" });
+      }
+
+      user.password = password;
+      user.resetPasswordToken = null;
+      user.resetPasswordExpires = null;
+      await user.save();
+
+      return response.status(200).json({ message: "The password was successfully reset"});
+    } catch(error) {
+      if (error instanceof ValidationError) {
+        const validationErrors = error.errors.map((err) => err.message);
+        return response.status(400).json({
+          message: "Validation errors",
+          errors: validationErrors,
+        });
+      }
       return response.status(500).json({ message: "Internal server error" });
     }
   },

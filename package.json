@@ -34,6 +34,8 @@
     "helmet": "^7.1.0",
     "jsonwebtoken": "9.0.2",
     "mariadb": "^3.2.3",
+    "nodemailer": "^6.9.13",
+    "nodemailer-express-handlebars": "^6.1.2",
     "sequelize": "^6.37.1"
   }
 }
