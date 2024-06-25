@@ -188,7 +188,7 @@ class User extends Model {
           allowNull: true,
         },
         resetPasswordToken: {
-          type: DataTypes.STRING,
+          type: DataTypes.STRING(257),
           allowNull: true,
           defaultValue: null,
         },
