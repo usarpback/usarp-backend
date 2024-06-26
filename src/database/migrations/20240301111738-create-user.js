@@ -145,7 +145,7 @@ module.exports = {
         allowNull: true,
       },
       reset_password_token: {
-        type: Sequelize.STRING,
+        type: Sequelize.TEXT,
         allowNull: true,
         defaultValue: null,
       },

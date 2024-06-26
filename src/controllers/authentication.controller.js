@@ -109,7 +109,7 @@ module.exports = {
 
       mailer.sendMail({
         to: email,
-        from : 'usarpback@gmail.com',
+        from : 'mailusarp@gmail.com',
         template: 'forgot_password',
         subject: 'Password Reset Request',
         context: { reset_link },
