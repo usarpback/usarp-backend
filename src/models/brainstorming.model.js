@@ -1,6 +1,6 @@
 const { Model, DataTypes } = require("sequelize");
 const { parse, isValid, format } = require("date-fns");
-const validateDateTimeInFuture = require("../helpers/dateAndTimeFuture");
+const { validateDateTimeInFuture } = require("../helpers/dateAndTime");
 
 class Brainstorming extends Model {
   static associate(models) {
