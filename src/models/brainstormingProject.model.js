@@ -5,10 +5,12 @@ class BrainstormingProject extends Model {
     this.belongsTo(models.Project, {
       foreignKey: "projectId",
       targetKey: "id",
+      onDelete: "CASCADE",
     });
     this.belongsTo(models.Brainstorming, {
       foreignKey: "brainstormingId",
       targetKey: "id",
+      onDelete: "CASCADE",
     });
   }
   static init(sequelize) {

@@ -5,6 +5,18 @@ const tokenHelper = require("../helpers/token.helpers");
 
 class User extends Model {
   static associate(models) {
+    this.hasMany(models.Project, {
+      foreignKey: "creatorId",
+      as: "projects",
+      onDelete: "CASCADE",
+    });
+
+    this.hasMany(models.Brainstorming, {
+      foreignKey: "creatorId",
+      as: "brainstormings",
+      onDelete: "CASCADE",
+    });
+
     this.belongsToMany(models.Project, {
       through: "ProjectUser",
       foreignKey: "memberEmail",
@@ -35,6 +47,9 @@ class User extends Model {
               args: /^[a-zA-ZÀ-ÿ\s]+$/,
               msg: "The full name must contain only uppercase and lowercase letters.",
             },
+          },
+          set(value) {
+            this.setDataValue("fullName", value.trim());
           },
         },
         email: {
@@ -71,15 +86,18 @@ class User extends Model {
             },
             isStrongPassword(value) {
               if (
-                !/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()\-_=+{};:,<.>~|/\\])(?!\s){8,15}/.test(
+                !/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()\-_=+{};:,<.>~|/\\])[^\s]{8,15}$/.test(
                   value,
                 )
               ) {
                 throw new Error(
-                  "The password must be at least 8 and at most 15 characters long and contain at least one lowercase letter, one uppercase letter, one number, one special character and no spaces.",
+                  "The password must be at least 8 and at most 15 characters long and contain at least one lowercase letter, one uppercase letter, one number, one special character, and no spaces.",
                 );
               }
             },
+          },
+          set(value) {
+            this.setDataValue("password", value.trim());
           },
         },
         gender: {
@@ -177,8 +195,16 @@ class User extends Model {
               msg: "The 'Organization' field contains invalid characters",
             },
           },
+          set(value) {
+            this.setDataValue("organization", value.trim());
+          },
         },
         loginAttempts: {
+          type: DataTypes.INTEGER,
+          allowNull: true,
+          defaultValue: 0,
+        },
+        deleteAttempts: {
           type: DataTypes.INTEGER,
           allowNull: true,
           defaultValue: 0,

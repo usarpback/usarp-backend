@@ -5,10 +5,12 @@ class ProjectUser extends Model {
     this.belongsTo(models.Project, {
       foreignKey: "projectId",
       targetKey: "id",
+      onDelete: "CASCADE",
     });
     this.belongsTo(models.User, {
       foreignKey: "memberEmail",
       targetKey: "email",
+      onDelete: "CASCADE",
     });
   }
   static init(sequelize) {

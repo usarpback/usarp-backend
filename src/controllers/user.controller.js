@@ -1,6 +1,8 @@
 const UserModel = require("../models/user.model");
 const { ValidationError } = require("sequelize");
 const bcrypt = require("bcrypt");
+const date_fns = require("date-fns");
+const { formatBlockedAccountMessage } = require("../helpers/dateAndTime");
 
 module.exports = {
   async getAllUsers(request, response) {
@@ -47,7 +49,7 @@ module.exports = {
       }
 
       const updatedData = {
-        fullname: request.body.fullName || user.fullName,
+        fullName: request.body.fullName || user.fullName,
         email: request.body.email || user.email,
         gender: request.body.gender || user.gender,
         birthdate: request.body.birthdate || user.birthdate,
@@ -116,6 +118,82 @@ module.exports = {
       return response
         .status(200)
         .send({ message: "Password updated successfully!" });
+    } catch (error) {
+      if (error instanceof ValidationError) {
+        const validationErrors = error.errors.map((err) => err.message);
+        return response.status(400).json({
+          message: "Validation errors",
+          errors: validationErrors,
+        });
+      }
+      return response.status(500).send({ message: "Internal server error" });
+    }
+  },
+
+  async deleteAccount(request, response) {
+    try {
+      const userId = request.userId;
+      const { password } = request.body;
+
+      if (!password) {
+        return response
+          .status(400)
+          .json({ message: "The 'password' field is mandatory" });
+      }
+
+      const user = await UserModel.findByPk(userId);
+
+      if (!user) {
+        return response.status(404).json({ message: "User not found" });
+      }
+
+      if (user.lockUntil && date_fns.isAfter(new Date(), user.lockUntil)) {
+        user.deleteAttempts = 0;
+        user.lockUntil = null;
+        await user.save();
+      } else if (user.lockUntil) {
+        const blockedMessage = formatBlockedAccountMessage(user.lockUntil);
+
+        return response.status(403).json({
+          message: blockedMessage,
+        });
+      }
+
+      const isCurrentPasswordValid = await bcrypt.compare(
+        password,
+        user.password,
+      );
+      if (!isCurrentPasswordValid) {
+        user.deleteAttempts += 1;
+        if (user.deleteAttempts >= 3) {
+          user.lockUntil = date_fns.addHours(new Date(), 24);
+
+          await user.save();
+
+          const blockedMessage = formatBlockedAccountMessage(user.lockUntil);
+          return response.status(403).json({
+            message: blockedMessage,
+          });
+        } else {
+          let remainingAttempts = 3 - user.deleteAttempts;
+
+          await user.save();
+
+          return response.status(400).json({
+            message: `Incorrect password, you have ${remainingAttempts} more attempts remaining.`,
+          });
+        }
+      }
+
+      user.deleteAttempts = 0;
+      user.lockUntil = null;
+      await user.save();
+
+      await user.destroy();
+
+      return response.status(200).json({
+        message: "Account deleted successfully!",
+      });
     } catch (error) {
       if (error instanceof ValidationError) {
         const validationErrors = error.errors.map((err) => err.message);

@@ -140,6 +140,11 @@ module.exports = {
         allowNull: true,
         defaultValue: 0,
       },
+      delete_attempts: {
+        type: Sequelize.INTEGER,
+        allowNull: true,
+        defaultValue: 0,
+      },
       lock_until: {
         type: Sequelize.DATE,
         allowNull: true,
