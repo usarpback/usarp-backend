@@ -11,8 +11,14 @@ module.exports = {
         primaryKey: true,
       },
       creator_id: {
-        type: Sequelize.STRING,
+        type: Sequelize.UUID,
         allowNull: false,
+        references: {
+          model: "users",
+          key: "id",
+        },
+        onUpdate: "CASCADE",
+        onDelete: "CASCADE",
       },
       brainstorming_title: {
         type: Sequelize.STRING,

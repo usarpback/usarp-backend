@@ -1,7 +1,8 @@
 const UserModel = require("../models/user.model");
 const mailer = require("../config/mailer");
 const { ValidationError } = require("sequelize");
-const { addMinutes, isAfter } = require("date-fns");
+const date_fns = require("date-fns");
+const { formatBlockedAccountMessage } = require("../helpers/dateAndTime");
 
 module.exports = {
   async signup(request, response) {
@@ -52,13 +53,15 @@ module.exports = {
           .json({ message: "Invalid email and/or password" });
       }
 
-      if (user.lockUntil && isAfter(new Date(), user.lockUntil)) {
+      if (user.lockUntil && date_fns.isAfter(new Date(), user.lockUntil)) {
         user.loginAttempts = 0;
         user.lockUntil = null;
         await user.save();
       } else if (user.lockUntil) {
+        const blockedMessage = formatBlockedAccountMessage(user.lockUntil);
+
         return response.status(403).json({
-          message: "Account is locked. Please try again in 10 minutes.",
+          message: blockedMessage,
         });
       }
 
@@ -66,15 +69,26 @@ module.exports = {
       if (!isPasswordValid) {
         user.loginAttempts += 1;
         if (user.loginAttempts >= 3) {
-          user.lockUntil = addMinutes(new Date(), 10);
+          user.lockUntil = date_fns.addMinutes(new Date(), 10);
+
+          await user.save();
+
+          const blockedMessage = formatBlockedAccountMessage(user.lockUntil);
+
+          return response.status(403).json({
+            message: blockedMessage,
+          });
+        } else {
+          let remainingAttempts = 3 - user.loginAttempts;
+          await user.save();
+          return response.status(400).json({
+            message: `Invalid email and/or password, you have ${remainingAttempts} more attempts remaining.`,
+          });
         }
-        await user.save();
-        return response
-          .status(400)
-          .json({ message: "Invalid email and/or password" });
       }
 
       user.loginAttempts = 0;
+      user.deleteAttempts = 0;
       user.lockUntil = null;
       await user.save();
 
@@ -89,7 +103,7 @@ module.exports = {
     const now = new Date();
     now.setMinutes(now.getMinutes() + 30);
 
-    try{
+    try {
       // Find user by email address
       const user = await UserModel.findOne({
         where: {
@@ -98,29 +112,29 @@ module.exports = {
       });
 
       if (!user) {
-        return response
-          .status(400)
-          .json({ message: "Invalid email" });
+        return response.status(400).json({ message: "Invalid email" });
       }
 
       // Generate and return token
-      const token = user.generateToken(expiresIn = '30m');
+      const token = user.generateToken((expiresIn = "30m"));
       const reset_link = `localhost:3333/auth/reset_password/${user.id}/${token}`;
 
       mailer.sendMail({
         to: email,
-        from : 'mailusarp@gmail.com',
-        template: 'forgot_password',
-        subject: 'Password Reset Request',
+        from: "mailusarp@gmail.com",
+        template: "forgot_password",
+        subject: "Password Reset Request",
         context: { reset_link },
-      })
+      });
 
       user.resetPasswordToken = token;
       user.resetPasswordExpires = now;
       await user.save();
 
-      return response.status(200).json({ message: "The recovery email was sent to the user"});
-    } catch(error) {
+      return response
+        .status(200)
+        .json({ message: "The recovery email was sent to the user" });
+    } catch (error) {
       return response.status(500).json({ message: "Internal server error" });
     }
   },
@@ -129,7 +143,7 @@ module.exports = {
     const { token, userId } = request.params;
     const now = new Date();
 
-    try{
+    try {
       const user = await UserModel.findByPk(userId);
 
       if (!user) {
@@ -149,8 +163,10 @@ module.exports = {
       user.resetPasswordExpires = null;
       await user.save();
 
-      return response.status(200).json({ message: "The password was successfully reset"});
-    } catch(error) {
+      return response
+        .status(200)
+        .json({ message: "The password was successfully reset" });
+    } catch (error) {
       if (error instanceof ValidationError) {
         const validationErrors = error.errors.map((err) => err.message);
         return response.status(400).json({

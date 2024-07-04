@@ -2,6 +2,12 @@ const { Model, DataTypes } = require("sequelize");
 
 class Project extends Model {
   static associate(models) {
+    this.belongsTo(models.User, {
+      foreignKey: "creatorId",
+      as: "creator",
+      onDelete: "CASCADE",
+    });
+
     this.belongsToMany(models.User, {
       through: "ProjectUser",
       foreignKey: "projectId",
@@ -35,33 +41,61 @@ class Project extends Model {
             notEmpty: {
               msg: "The project name field cannot be empty",
             },
-            len: {
-              args: [5],
-              msg: "The project name must be at least 5 characters long",
+            len(value) {
+              if (value && value.trim().length < 5) {
+                throw new Error(
+                  "The project name must be at least 5 characters long",
+                );
+              }
             },
-            is: {
-              args: /^[\p{L}0-9!@#$%^&*ç()_\-+=\[\]{}\\|:;'"<> ]+$/iu,
-              msg: "The project name contains invalid characters",
+            containsInvalidCharacters(value) {
+              if (
+                value &&
+                value.trim().length > 5 &&
+                !/^[\p{L}0-9!@#$%^&*ç()_\-+=\[\]{}\\|:;'"<> ]+$/iu.test(value)
+              ) {
+                throw new Error("The project name contains invalid characters");
+              }
             },
+          },
+          set(value) {
+            this.setDataValue("projectName", value.trim());
           },
         },
         description: {
           type: DataTypes.STRING,
           allowNull: true,
           validate: {
-            len: {
-              args: [5],
-              msg: "The description must be at least 5 characters long",
+            len(value) {
+              if (value && value.trim().length < 5) {
+                throw new Error(
+                  "The description must be at least 5 characters long",
+                );
+              }
             },
-            is: {
-              args: /^[\p{L}0-9!@#$%^&*ç()_\-+=\[\]{}\\|:;'"<> ]+$/iu,
-              msg: "The description contains invalid characters",
+            containsInvalidCharacters(value) {
+              if (
+                value &&
+                value.trim().length > 5 &&
+                !/^[\p{L}0-9!@#$%^&*ç()_\-+=\[\]{}\\|:;'"<> ]+$/iu.test(value)
+              ) {
+                throw new Error("The description contains invalid characters");
+              }
             },
+          },
+          set(value) {
+            this.setDataValue("description", value.trim());
           },
         },
         creatorId: {
-          type: DataTypes.STRING,
+          type: DataTypes.UUID,
           allowNull: false,
+          references: {
+            model: "users",
+            key: "id",
+          },
+          onUpdate: "CASCADE",
+          onDelete: "CASCADE",
         },
         status: {
           type: DataTypes.ENUM("Novo", "Excluído", "Mais antigo"),

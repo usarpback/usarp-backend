@@ -1,6 +1,6 @@
 const { Model, DataTypes } = require("sequelize");
 const { parse, isValid, format } = require("date-fns");
-const validateDateTimeInFuture = require("../helpers/dateAndTimeFuture");
+const { validateDateTimeInFuture } = require("../helpers/dateAndTime");
 
 class Brainstorming extends Model {
   static associate(models) {
@@ -8,6 +8,12 @@ class Brainstorming extends Model {
       through: "BrainstormingProject",
       foreignKey: "brainstormingId",
       as: "projects",
+    });
+
+    this.belongsTo(models.User, {
+      foreignKey: "creatorId",
+      targetKey: "id",
+      onDelete: "CASCADE",
     });
   }
 
@@ -21,8 +27,14 @@ class Brainstorming extends Model {
           primaryKey: true,
         },
         creatorId: {
-          type: DataTypes.STRING,
+          type: DataTypes.UUID,
           allowNull: false,
+          references: {
+            model: "users",
+            key: "id",
+          },
+          onUpdate: "CASCADE",
+          onDelete: "CASCADE",
         },
         brainstormingTitle: {
           type: DataTypes.STRING,
@@ -38,6 +50,9 @@ class Brainstorming extends Model {
               args: /^[\p{L}0-9!@#$%^&*ç()_\-+=\[\]{}\\|:;'"<> ]+$/iu,
               msg: "The brainstorming title contains invalid characters",
             },
+          },
+          set(value) {
+            this.setDataValue("brainstormingTitle", value.trim());
           },
         },
         project: {

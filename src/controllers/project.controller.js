@@ -1,7 +1,7 @@
 const { Sequelize } = require("sequelize");
 const { ValidationError } = require("sequelize");
-const Project = require("../models/project.model");
 const User = require("../models/user.model");
+const Project = require("../models/project.model");
 const ProjectUser = require("../models/projectUser.model");
 const sequelize = require("../database/index");
 
@@ -72,21 +72,42 @@ module.exports = {
     }
   },
 
-  async getAllUserCreatedProjects(request, response) {
+  async getAllUserCreatedProjectsAndCounts(request, response) {
     try {
-      const getAllUserCreatedProjects = await Project.findAll({
+      const projects = await Project.findAndCountAll({
         where: {
           creatorId: request.userId,
         },
       });
 
-      if (getAllUserCreatedProjects.length === 0) {
+      if (projects.count === 0) {
         return response
           .status(404)
           .json({ message: "No user-created projects yet" });
       }
 
-      return response.status(200).json({ getAllUserCreatedProjects });
+      const formattedProjects = await Promise.all(
+        projects.rows.map(async (project) => {
+          const projectData = project.toJSON();
+
+          const projectUsers = await ProjectUser.findAll({
+            where: { projectId: project.id },
+            attributes: ["memberEmail", "roleInProject"],
+          });
+
+          projectData.projectTeam = projectUsers.map((member) => ({
+            email: member.memberEmail,
+            roleInProject: member.roleInProject,
+          }));
+
+          return projectData;
+        }),
+      );
+
+      return response.status(200).json({
+        count: projects.count,
+        projects: formattedProjects,
+      });
     } catch (error) {
       return response.status(500).json({ message: "Internal server error" });
     }

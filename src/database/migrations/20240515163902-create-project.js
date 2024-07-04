@@ -21,8 +21,14 @@ module.exports = {
         allowNull: true,
       },
       creator_id: {
-        type: Sequelize.STRING,
+        type: Sequelize.UUID,
         allowNull: false,
+        references: {
+          model: "users",
+          key: "id",
+        },
+        onUpdate: "CASCADE",
+        onDelete: "CASCADE",
       },
       status: {
         type: Sequelize.ENUM("Novo", "Excluído", "Mais antigo"),
