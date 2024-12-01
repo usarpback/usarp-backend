@@ -20,6 +20,22 @@ module.exports = {
         onUpdate: "CASCADE",
         onDelete: "CASCADE",
       },
+      member_id: {
+        type: Sequelize.UUID,
+        allowNull: false,
+        references: {
+          model: "users",
+          key: "id",
+        },
+        onUpdate: "CASCADE",
+        onDelete: "CASCADE",
+      },
+      full_name: {
+        type: Sequelize.STRING,
+        allowNull: false,
+        onUpdate: "CASCADE",
+        onDelete: "CASCADE",
+      },
       member_email: {
         allowNull: false,
         type: Sequelize.STRING,

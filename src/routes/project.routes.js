@@ -7,5 +7,6 @@ ProjectRoutes.get(
   "/project/owned-projects",
   ProjectController.getAllUserCreatedProjectsAndCounts,
 );
+ProjectRoutes.get("/projects-details", ProjectController.getProjectsDetails);
 
 module.exports = ProjectRoutes;

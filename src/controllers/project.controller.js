@@ -2,6 +2,8 @@ const { Sequelize } = require("sequelize");
 const { ValidationError } = require("sequelize");
 const User = require("../models/user.model");
 const Project = require("../models/project.model");
+const Brainstormings = require("../models/brainstorming.model");
+// const UserStories = require("../models/userStories.model");
 const ProjectUser = require("../models/projectUser.model");
 const sequelize = require("../database/index");
 
@@ -19,7 +21,22 @@ module.exports = {
         { projectName, description, creatorId },
         { transaction: t },
       );
+
+      const creator = await User.findOne({
+        where: { id: creatorId },
+        attributes: ["id", "fullName", "email", "organization"],
+      });
+
+      if (!creator) {
+        await t.rollback();
+        return response.status(400).json({
+          message: `Creator with id '${creatorId}' not found.`,
+        });
+      }
+
       const teamMembers = [];
+
+      let creatorAdded = false;
 
       for (const member of projectTeam) {
         const { email, roleInProject } = member;
@@ -46,16 +63,57 @@ module.exports = {
         }
 
         await ProjectUser.create(
-          { projectId: project.id, memberEmail: email, roleInProject },
+          {
+            projectId: project.id,
+            memberId: user.id,
+            fullName: user.fullName,
+            memberEmail: email,
+            roleInProject,
+          },
           { transaction: t },
         );
 
-        teamMembers.push({ email, roleInProject });
+        teamMembers.push({
+          id: user.id,
+          fullName: user.fullName,
+          email: user.email,
+          roleInProject,
+        });
+
+        if (email === creator.email) {
+          creatorAdded = true;
+        }
+      }
+
+      if (!creatorAdded) {
+        await ProjectUser.create(
+          {
+            projectId: project.id,
+            memberId: creator.id,
+            fullName: creator.fullName,
+            memberEmail: creator.email,
+            roleInProject: "Moderador",
+          },
+          { transaction: t },
+        );
+        teamMembers.push({
+          id: creator.id,
+          fullName: creator.fullName,
+          email: creator.email,
+          roleInProject: "Moderador",
+        });
       }
 
       await t.commit();
 
-      return response.status(201).json({ project, projectTeam: teamMembers });
+      const projectResponse = project.toJSON();
+      delete projectResponse.creatorId;
+
+      return response.status(201).json({
+        project: projectResponse,
+        creator: creator.toJSON(),
+        projectTeam: teamMembers,
+      });
     } catch (error) {
       if (!t.finished) {
         await t.rollback();
@@ -90,17 +148,39 @@ module.exports = {
         projects.rows.map(async (project) => {
           const projectData = project.toJSON();
 
+          const creator = await User.findOne({
+            where: { id: project.creatorId },
+            attributes: ["id", "fullName", "email", "organization"],
+          });
+
+          if (!creator) {
+            throw new Error(
+              `Creator with id '${project.creatorId}' not found.`,
+            );
+          }
+
+          projectData.creator = creator.toJSON();
+
           const projectUsers = await ProjectUser.findAll({
             where: { projectId: project.id },
-            attributes: ["memberEmail", "roleInProject"],
+            attributes: [
+              "memberId",
+              "fullName",
+              "memberEmail",
+              "roleInProject",
+            ],
           });
 
           projectData.projectTeam = projectUsers.map((member) => ({
+            memberId: member.memberId,
+            fullName: member.fullName,
             email: member.memberEmail,
             roleInProject: member.roleInProject,
           }));
 
-          return projectData;
+          const { creatorId, ...projectWithoutCreatorId } = projectData;
+
+          return projectWithoutCreatorId;
         }),
       );
 
@@ -109,6 +189,77 @@ module.exports = {
         projects: formattedProjects,
       });
     } catch (error) {
+      return response.status(500).json({ message: "Internal server error" });
+    }
+  },
+
+  async getProjectsDetails(request, response) {
+    try {
+      const userEmail = request.userEmail;
+
+      const projectMemberships = await ProjectUser.findAll({
+        where: { memberEmail: userEmail },
+        attributes: ["projectId"],
+      });
+
+      const projectIds = projectMemberships.map(
+        (membership) => membership.projectId,
+      );
+
+      const projects = await Project.findAll({
+        where: { id: projectIds },
+      });
+
+      const formattedProjects = await Promise.all(
+        projects.map(async (project) => {
+          const projectData = project.toJSON();
+
+          const creator = await User.findOne({
+            where: { id: project.creatorId },
+            attributes: ["id", "fullName", "email", "organization"],
+          });
+
+          if (!creator) {
+            throw new Error(
+              `Creator with id '${project.creatorId}' not found.`,
+            );
+          }
+
+          const brainstormings = await Brainstormings.findAndCountAll({
+            where: { project: project.id },
+          });
+
+          const projectUsers = await ProjectUser.findAll({
+            where: { projectId: project.id },
+            attributes: [
+              "memberId",
+              "fullName",
+              "memberEmail",
+              "roleInProject",
+            ],
+          });
+
+          projectData.creator = creator.toJSON();
+          projectData.projectTeam = projectUsers.map((member) => ({
+            memberId: member.memberId,
+            fullName: member.fullName,
+            email: member.memberEmail,
+            roleInProject: member.roleInProject,
+          }));
+
+          projectData.brainstormingsCount = brainstormings.count;
+
+          const { creatorId, ...projectWithoutCreatorId } = projectData;
+
+          return projectWithoutCreatorId;
+        }),
+      );
+
+      return response.status(200).json({
+        projects: formattedProjects,
+      });
+    } catch (error) {
+      console.error(error);
       return response.status(500).json({ message: "Internal server error" });
     }
   },

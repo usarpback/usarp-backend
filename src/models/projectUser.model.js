@@ -12,6 +12,12 @@ class ProjectUser extends Model {
       targetKey: "email",
       onDelete: "CASCADE",
     });
+
+    this.belongsTo(models.User, {
+      foreignKey: "memberId",
+      targetKey: "id",
+      as: "memberDetails",
+    });
   }
   static init(sequelize) {
     super.init(
@@ -29,6 +35,20 @@ class ProjectUser extends Model {
             model: "projects",
             key: "id",
           },
+          onUpdate: "CASCADE",
+          onDelete: "CASCADE",
+        },
+        memberId: {
+          type: DataTypes.UUID,
+          allowNull: false,
+          references: {
+            model: "users",
+            key: "id",
+          },
+        },
+        fullName: {
+          type: DataTypes.STRING,
+          allowNull: false,
           onUpdate: "CASCADE",
           onDelete: "CASCADE",
         },
@@ -80,6 +100,16 @@ class ProjectUser extends Model {
         tableName: "project_user",
       },
     );
+  }
+  static addHookBeforeCreate(models) {
+    this.addHook("beforeCreate", async (projectUser, options) => {
+      if (!projectUser.fullName) {
+        const user = await models.User.findByPk(projectUser.memberId);
+        if (user) {
+          projectUser.fullName = user.fullName;
+        }
+      }
+    });
   }
 }
 

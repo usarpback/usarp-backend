@@ -22,6 +22,11 @@ class User extends Model {
       foreignKey: "memberEmail",
       as: "projects",
     });
+
+    this.hasMany(models.ProjectUser, {
+      foreignKey: "memberId",
+      as: "projectMemberships",
+    });
   }
   static init(sequelize) {
     super.init(

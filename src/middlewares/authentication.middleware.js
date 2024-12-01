@@ -12,6 +12,7 @@ module.exports = async (request, response, next) => {
 
     const decoded = verifyToken(token);
     request.userId = decoded.id;
+    request.userEmail = decoded.email;
     return next();
   } catch (error) {
     if (error.name === "JsonWebTokenError" || "TokenExpiredError") {
