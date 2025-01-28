@@ -36,10 +36,6 @@ module.exports = {
         type: Sequelize.STRING,
         allowNull: false,
       },
-      user_stories: {
-        type: Sequelize.STRING,
-        allowNull: false,
-      },
       created_at: Sequelize.DATE,
       updated_at: Sequelize.DATE,
     });

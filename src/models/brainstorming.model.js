@@ -4,6 +4,12 @@ const { validateDateTimeInFuture } = require("../helpers/dateAndTime");
 
 class Brainstorming extends Model {
   static associate(models) {
+    this.hasMany(models.UserStories, {
+      foreignKey: "brainstormingId",
+      as: "userStories",
+      onDelete: "CASCADE",
+    });
+
     this.belongsToMany(models.Project, {
       through: "BrainstormingProject",
       foreignKey: "brainstormingId",
@@ -107,18 +113,6 @@ class Brainstorming extends Model {
                   "The 'Brainstorming time' field must be in the format HH:MM and represent a valid time.",
                 );
               }
-            },
-          },
-        },
-        userStories: {
-          type: DataTypes.STRING,
-          allowNull: false,
-          validate: {
-            notNull: {
-              msg: "The 'User stories' field cannot be empty",
-            },
-            notEmpty: {
-              msg: "The 'User stories' field cannot be empty",
             },
           },
         },

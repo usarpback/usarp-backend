@@ -1,6 +1,7 @@
 const Brainstorming = require("../models/brainstorming.model");
 const BrainstormingProject = require("../models/brainstormingProject.model");
 const Project = require("../models/project.model");
+const UserStories = require("../models/userStories.model");
 const { ValidationError } = require("sequelize");
 
 module.exports = {
@@ -26,14 +27,40 @@ module.exports = {
         });
       }
 
+      if (!Array.isArray(userStories) || userStories.length > 3) {
+        return response.status(400).json({
+          message:
+            "You can associate up to 3 User Stories with a Brainstorming.",
+        });
+      }
+
+      const validUserStories = await UserStories.findAll({
+        where: {
+          id: userStories,
+          creatorId,
+          projectId: project,
+        },
+      });
+
+      if (validUserStories.length !== userStories.length) {
+        return response.status(400).json({
+          message:
+            "One or more User Stories do not exist or are not associated with the project.",
+        });
+      }
+
       const brainstorming = await Brainstorming.create({
         creatorId,
         brainstormingTitle,
         project,
         brainstormingDate,
         brainstormingTime,
-        userStories,
       });
+
+      for (const userStory of validUserStories) {
+        userStory.brainstormingId = brainstorming.id;
+        await userStory.save();
+      }
 
       await BrainstormingProject.create({
         projectId: project,

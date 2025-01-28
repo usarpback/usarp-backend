@@ -3,7 +3,7 @@ const { ValidationError } = require("sequelize");
 const User = require("../models/user.model");
 const Project = require("../models/project.model");
 const Brainstormings = require("../models/brainstorming.model");
-// const UserStories = require("../models/userStories.model");
+const UserStories = require("../models/userStories.model");
 const ProjectUser = require("../models/projectUser.model");
 const sequelize = require("../database/index");
 
@@ -229,6 +229,10 @@ module.exports = {
             where: { project: project.id },
           });
 
+          const userStories = await UserStories.findAndCountAll({
+            where: { projectId: project.id },
+          });
+
           const projectUsers = await ProjectUser.findAll({
             where: { projectId: project.id },
             attributes: [
@@ -248,6 +252,7 @@ module.exports = {
           }));
 
           projectData.brainstormingsCount = brainstormings.count;
+          projectData.userStoriesCount = userStories.count;
 
           const { creatorId, ...projectWithoutCreatorId } = projectData;
 

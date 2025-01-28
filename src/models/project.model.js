@@ -19,6 +19,12 @@ class Project extends Model {
       foreignKey: "projectId",
       as: "brainstormings",
     });
+
+    this.hasMany(models.UserStories, {
+      foreignKey: "projectId",
+      as: "userStories",
+      onDelete: "CASCADE",
+    });
   }
   static init(sequelize) {
     super.init(
