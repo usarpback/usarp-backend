@@ -6,6 +6,7 @@ const Brainstormings = require("../models/brainstorming.model");
 // const UserStories = require("../models/userStories.model");
 const ProjectUser = require("../models/projectUser.model");
 const sequelize = require("../database/index");
+const { Op } = require("sequelize");
 
 module.exports = {
   async createProject(request, response) {
@@ -132,10 +133,50 @@ module.exports = {
 
   async getAllUserCreatedProjectsAndCounts(request, response) {
     try {
+      // Extrai parâmetros de paginação, filtros e ordenação da query string
+      const {
+        offset,
+        limit,
+        id: filterId,
+        status,
+        projectName,
+        orderBy,
+        orderDirection,
+      } = request.query;
+
+      // Define valores padrão para offset e limit
+      const offsetValue = offset ? parseInt(offset, 10) : 0;
+      const limitValue = limit ? parseInt(limit, 10) : 10;
+
+      // Monta o filtro para a consulta: sempre restringe aos projetos criados pelo usuário
+      const projectFilter = {
+        creatorId: request.userId,
+        ...(filterId ? { id: filterId } : {}),
+        ...(status ? { status } : {}),
+        ...(projectName
+          ? { projectName: { [Op.like]: `%${projectName}%` } }
+          : {}),
+      };
+
+      // Configura a ordenação se for solicitado e se for por campos válidos
+      let orderClause;
+      if (orderBy && (orderBy === "createdAt" || orderBy === "updatedAt")) {
+        orderClause = [
+          [
+            orderBy,
+            orderDirection && orderDirection.toUpperCase() === "DESC"
+              ? "DESC"
+              : "ASC",
+          ],
+        ];
+      }
+
+      // Consulta os projetos com paginação, filtros e ordenação
       const projects = await Project.findAndCountAll({
-        where: {
-          creatorId: request.userId,
-        },
+        where: projectFilter,
+        offset: offsetValue,
+        limit: limitValue,
+        order: orderClause,
       });
 
       if (projects.count === 0) {
@@ -144,6 +185,7 @@ module.exports = {
           .json({ message: "No user-created projects yet" });
       }
 
+      // Formata os projetos enriquecendo com dados do criador e equipe
       const formattedProjects = await Promise.all(
         projects.rows.map(async (project) => {
           const projectData = project.toJSON();
@@ -158,7 +200,6 @@ module.exports = {
               `Creator with id '${project.creatorId}' not found.`,
             );
           }
-
           projectData.creator = creator.toJSON();
 
           const projectUsers = await ProjectUser.findAll({
@@ -178,17 +219,23 @@ module.exports = {
             roleInProject: member.roleInProject,
           }));
 
+          // Remove o campo creatorId antes de retornar
           const { creatorId, ...projectWithoutCreatorId } = projectData;
-
           return projectWithoutCreatorId;
         }),
       );
 
+      // Retorna os projetos formatados juntamente com as informações de paginação
       return response.status(200).json({
         count: projects.count,
+        pagination: {
+          offset: offsetValue,
+          limit: limitValue,
+        },
         projects: formattedProjects,
       });
     } catch (error) {
+      console.error(error);
       return response.status(500).json({ message: "Internal server error" });
     }
   },
@@ -197,6 +244,7 @@ module.exports = {
     try {
       const userEmail = request.userEmail;
 
+      // Busca os projectIds associados ao usuário
       const projectMemberships = await ProjectUser.findAll({
         where: { memberEmail: userEmail },
         attributes: ["projectId"],
@@ -206,10 +254,51 @@ module.exports = {
         (membership) => membership.projectId,
       );
 
-      const projects = await Project.findAll({
-        where: { id: projectIds },
+      // Extrai os parâmetros de paginação, filtro e ordenação da query string
+      const {
+        offset,
+        limit,
+        id: filterId,
+        status,
+        projectName,
+        orderBy,
+        orderDirection,
+      } = request.query;
+
+      const offsetValue = offset ? parseInt(offset, 10) : 0;
+      const limitValue = limit ? parseInt(limit, 10) : 10;
+
+      // Monta a condição "where" para os filtros
+      const projectFilter = {
+        // Garante que os projetos pesquisados estão entre os projectIds do usuário
+        id: { [Op.in]: projectIds },
+        ...(filterId ? { id: filterId } : {}),
+        ...(status ? { status } : {}),
+        ...(projectName
+          ? { projectName: { [Op.like]: `%${projectName}%` } }
+          : {}),
+      };
+
+      // Configura a ordenação, permitindo apenas "createdAt" ou "updatedAt"
+      const order = [];
+      if (orderBy && (orderBy === "createdAt" || orderBy === "updatedAt")) {
+        order.push([
+          orderBy,
+          orderDirection && orderDirection.toUpperCase() === "DESC"
+            ? "DESC"
+            : "ASC",
+        ]);
+      }
+
+      // Realiza a consulta e também obtém o total para paginação
+      const { rows: projects, count: total } = await Project.findAndCountAll({
+        where: projectFilter,
+        offset: offsetValue,
+        limit: limitValue,
+        order: order.length > 0 ? order : undefined,
       });
 
+      // Formata os projetos conforme a lógica já existente
       const formattedProjects = await Promise.all(
         projects.map(async (project) => {
           const projectData = project.toJSON();
@@ -257,6 +346,11 @@ module.exports = {
 
       return response.status(200).json({
         projects: formattedProjects,
+        pagination: {
+          offset: offsetValue,
+          limit: limitValue,
+          total,
+        },
       });
     } catch (error) {
       console.error(error);
