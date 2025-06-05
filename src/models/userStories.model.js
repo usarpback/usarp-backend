@@ -2,12 +2,6 @@ const { Model, DataTypes } = require("sequelize");
 
 class UserStories extends Model {
   static associate(models) {
-    this.belongsTo(models.Brainstorming, {
-      foreignKey: "brainstormingId",
-      targetKey: "id",
-      onDelete: "CASCADE",
-    });
-
     this.belongsTo(models.User, {
       foreignKey: "creatorId",
       targetKey: "id",
@@ -18,6 +12,12 @@ class UserStories extends Model {
       foreignKey: "projectId",
       targetKey: "id",
       onDelete: "CASCADE",
+    });
+
+    this.belongsTo(models.Brainstorming, {
+      foreignKey: "brainstormingId",
+      targetKey: "id",
+      onDelete: "SET NULL",
     });
   }
 
@@ -58,7 +58,7 @@ class UserStories extends Model {
               msg: "The 'User Stories title' field cannot be empty",
             },
             is: {
-              args: /^[\p{L}0-9!@#$%^&*ç()_\-+=\[\]{}\\|:;'"<> ]+$/iu,
+              args: /^[\p{L}0-9!@#$%^&*ç()_\-+=[\]{}\\|:;'"<> ]+$/iu,
               msg: "The user stories title contains invalid characters",
             },
           },
@@ -67,18 +67,11 @@ class UserStories extends Model {
           },
         },
         card: {
-          type: DataTypes.STRING,
+          type: DataTypes.TEXT,
           allowNull: true,
           validate: {
-            notNull: {
-              msg: "The 'card' field cannot be empty",
-            },
             notEmpty: {
               msg: "The 'card' field cannot be empty",
-            },
-            is: {
-              args: /^[\p{L}0-9!@#$%^&*ç()_\-+=\[\]{}\\|:;'"<> ]+$/iu,
-              msg: "The card field contains invalid characters",
             },
           },
           set(value) {
@@ -86,18 +79,11 @@ class UserStories extends Model {
           },
         },
         conversation: {
-          type: DataTypes.STRING,
+          type: DataTypes.TEXT,
           allowNull: true,
           validate: {
-            notNull: {
-              msg: "The 'conversation' field cannot be empty",
-            },
             notEmpty: {
               msg: "The 'conversation' field cannot be empty",
-            },
-            is: {
-              args: /^[\p{L}0-9!@#$%^&*ç()_\-+=\[\]{}\\|:;'"<> ]+$/iu,
-              msg: "The conversation field contains invalid characters",
             },
           },
           set(value) {
@@ -105,18 +91,11 @@ class UserStories extends Model {
           },
         },
         confirmation: {
-          type: DataTypes.STRING,
+          type: DataTypes.TEXT,
           allowNull: true,
           validate: {
-            notNull: {
-              msg: "The 'confirmation' field cannot be empty",
-            },
             notEmpty: {
               msg: "The 'confirmation' field cannot be empty",
-            },
-            is: {
-              args: /^[\p{L}0-9!@#$%^&*ç()_\-+=\[\]{}\\|:;'"<> ]+$/iu,
-              msg: "The confirmation field contains invalid characters",
             },
           },
           set(value) {
@@ -135,8 +114,7 @@ class UserStories extends Model {
         },
         projectId: {
           type: DataTypes.UUID,
-          allowNull: true,
-          defaultValue: null,
+          allowNull: false,
           references: {
             model: "projects",
             key: "id",
@@ -147,13 +125,12 @@ class UserStories extends Model {
         brainstormingId: {
           type: DataTypes.UUID,
           allowNull: true,
-          defaultValue: null,
           references: {
             model: "brainstormings",
             key: "id",
           },
           onUpdate: "CASCADE",
-          onDelete: "SET NULL",
+          onDelete: "CASCADE",
         },
       },
       {

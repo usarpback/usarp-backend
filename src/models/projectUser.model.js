@@ -19,6 +19,7 @@ class ProjectUser extends Model {
       as: "memberDetails",
     });
   }
+
   static init(sequelize) {
     super.init(
       {
@@ -101,6 +102,7 @@ class ProjectUser extends Model {
       },
     );
   }
+
   static addHookBeforeCreate(models) {
     this.addHook("beforeCreate", async (projectUser, options) => {
       if (!projectUser.fullName) {

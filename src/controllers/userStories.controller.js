@@ -1,4 +1,5 @@
 const UserStories = require("../models/userStories.model");
+const Project = require("../models/project.model");
 const { ValidationError } = require("sequelize");
 
 module.exports = {
@@ -9,10 +10,30 @@ module.exports = {
       card,
       conversation,
       confirmation,
-      projectId = null,
-      brainstormingId = null,
+      projectId,
     } = request.body;
     const creatorId = request.userId;
+
+    if (!projectId) {
+      return response.status(400).json({
+        message:
+          "The 'projectId' field is required and must reference an existing project.",
+      });
+    }
+
+    const projectExists = await Project.findByPk(projectId);
+    if (!projectExists) {
+      return response.status(400).json({
+        message: `No project found with id '${projectId}'.`,
+      });
+    }
+
+    if (!userStorieNumber || !userStoriesTitle) {
+      return response.status(400).json({
+        message:
+          "The fields 'userStorieNumber' and 'userStoriesTitle' are required and cannot be empty.",
+      });
+    }
 
     try {
       const userStories = await UserStories.create({
@@ -22,8 +43,7 @@ module.exports = {
         conversation,
         confirmation,
         creatorId,
-        projectId: projectId || null,
-        brainstormingId: brainstormingId || null,
+        projectId,
       });
 
       return response.status(201).json(userStories);

@@ -10,12 +10,6 @@ class Brainstorming extends Model {
       onDelete: "CASCADE",
     });
 
-    this.belongsToMany(models.Project, {
-      through: "BrainstormingProject",
-      foreignKey: "brainstormingId",
-      as: "projects",
-    });
-
     this.belongsTo(models.User, {
       foreignKey: "creatorId",
       targetKey: "id",
@@ -53,7 +47,7 @@ class Brainstorming extends Model {
               msg: "The 'Brainstorming title' field cannot be empty",
             },
             is: {
-              args: /^[\p{L}0-9!@#$%^&*ç()_\-+=\[\]{}\\|:;'"<> ]+$/iu,
+              args: /^[\p{L}0-9!@#$%^&*ç()_\-+=[\]{}\\|:;'"<> ]+$/iu,
               msg: "The brainstorming title contains invalid characters",
             },
           },
@@ -61,7 +55,7 @@ class Brainstorming extends Model {
             this.setDataValue("brainstormingTitle", value.trim());
           },
         },
-        project: {
+        projectId: {
           type: DataTypes.STRING,
           allowNull: false,
           validate: {

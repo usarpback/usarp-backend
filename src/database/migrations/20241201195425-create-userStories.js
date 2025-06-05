@@ -19,15 +19,15 @@ module.exports = {
         allowNull: false,
       },
       card: {
-        type: Sequelize.STRING,
+        type: Sequelize.TEXT,
         allowNull: true,
       },
       conversation: {
-        type: Sequelize.STRING,
+        type: Sequelize.TEXT,
         allowNull: true,
       },
       confirmation: {
-        type: Sequelize.STRING,
+        type: Sequelize.TEXT,
         allowNull: true,
       },
       creator_id: {
@@ -42,8 +42,7 @@ module.exports = {
       },
       project_id: {
         type: Sequelize.UUID,
-        allowNull: true,
-        defaultValue: null,
+        allowNull: false,
         references: {
           model: "projects",
           key: "id",
@@ -54,13 +53,12 @@ module.exports = {
       brainstorming_id: {
         type: Sequelize.UUID,
         allowNull: true,
-        defaultValue: null,
         references: {
           model: "brainstormings",
           key: "id",
         },
         onUpdate: "CASCADE",
-        onDelete: "SET NULL",
+        onDelete: "CASCADE",
       },
       created_at: Sequelize.DATE,
       updated_at: Sequelize.DATE,

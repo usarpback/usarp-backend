@@ -1,5 +1,4 @@
 const Brainstorming = require("../models/brainstorming.model");
-const BrainstormingProject = require("../models/brainstormingProject.model");
 const Project = require("../models/project.model");
 const UserStories = require("../models/userStories.model");
 const { ValidationError } = require("sequelize");
@@ -17,7 +16,7 @@ module.exports = {
 
     try {
       const projectExists = await Project.findOne({
-        where: { id: project, creatorId: creatorId },
+        where: { id: project, creatorId },
       });
 
       if (!projectExists) {
@@ -27,10 +26,9 @@ module.exports = {
         });
       }
 
-      if (!Array.isArray(userStories) || userStories.length > 3) {
+      if (!userStories.every((id) => typeof id === "string")) {
         return response.status(400).json({
-          message:
-            "You can associate up to 3 User Stories with a Brainstorming.",
+          message: "User Stories must be an array of UUID strings.",
         });
       }
 
@@ -52,7 +50,7 @@ module.exports = {
       const brainstorming = await Brainstorming.create({
         creatorId,
         brainstormingTitle,
-        project,
+        projectId: project,
         brainstormingDate,
         brainstormingTime,
       });
@@ -62,12 +60,17 @@ module.exports = {
         await userStory.save();
       }
 
-      await BrainstormingProject.create({
-        projectId: project,
-        brainstormingId: brainstorming.id,
+      const fullBrainstorming = await Brainstorming.findOne({
+        where: { id: brainstorming.id },
+        include: [
+          {
+            model: UserStories,
+            as: "userStories",
+          },
+        ],
       });
 
-      return response.status(201).json(brainstorming);
+      return response.status(201).json(fullBrainstorming);
     } catch (error) {
       if (error instanceof ValidationError) {
         const validationErrors = error.errors.map((err) => err.message);
@@ -88,15 +91,22 @@ module.exports = {
         where: {
           creatorId: request.userId,
         },
+        include: [
+          {
+            model: UserStories,
+            as: "userStories",
+          },
+        ],
+        order: [["createdAt", "DESC"]],
       });
 
       if (getAllBrainstormingsAndCount.count === 0) {
-        return response
-          .status(404)
-          .json({ message: "No brainstormings created by this user yet" });
+        return response.status(404).json({
+          message: "No brainstormings created by this user yet",
+        });
       }
 
-      return response.status(200).json({ getAllBrainstormingsAndCount });
+      return response.status(200).json(getAllBrainstormingsAndCount);
     } catch (error) {
       return response.status(500).json({ message: "Internal server error" });
     }

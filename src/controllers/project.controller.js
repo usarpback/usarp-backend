@@ -1,11 +1,13 @@
-const { Sequelize } = require("sequelize");
+const {
+  sequelize,
+  Sequelize,
+  User,
+  Project,
+  Brainstorming,
+  UserStories,
+  ProjectUser,
+} = require("../database");
 const { ValidationError } = require("sequelize");
-const User = require("../models/user.model");
-const Project = require("../models/project.model");
-const Brainstormings = require("../models/brainstorming.model");
-const UserStories = require("../models/userStories.model");
-const ProjectUser = require("../models/projectUser.model");
-const sequelize = require("../database/index");
 
 module.exports = {
   async createProject(request, response) {
@@ -225,8 +227,8 @@ module.exports = {
             );
           }
 
-          const brainstormings = await Brainstormings.findAndCountAll({
-            where: { project: project.id },
+          const brainstormings = await Brainstorming.findAndCountAll({
+            where: { projectId: project.id },
           });
 
           const userStories = await UserStories.findAndCountAll({
