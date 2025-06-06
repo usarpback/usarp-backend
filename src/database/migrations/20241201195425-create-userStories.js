@@ -50,16 +50,6 @@ module.exports = {
         onUpdate: "CASCADE",
         onDelete: "CASCADE",
       },
-      brainstorming_id: {
-        type: Sequelize.UUID,
-        allowNull: true,
-        references: {
-          model: "brainstormings",
-          key: "id",
-        },
-        onUpdate: "CASCADE",
-        onDelete: "CASCADE",
-      },
       created_at: Sequelize.DATE,
       updated_at: Sequelize.DATE,
     });

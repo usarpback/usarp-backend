@@ -14,10 +14,11 @@ class UserStories extends Model {
       onDelete: "CASCADE",
     });
 
-    this.belongsTo(models.Brainstorming, {
-      foreignKey: "brainstormingId",
-      targetKey: "id",
-      onDelete: "SET NULL",
+    this.belongsToMany(models.Brainstorming, {
+      through: "brainstorming_userstories",
+      foreignKey: "userStoryId",
+      otherKey: "brainstormingId",
+      as: "brainstormings",
     });
   }
 
@@ -117,16 +118,6 @@ class UserStories extends Model {
           allowNull: false,
           references: {
             model: "projects",
-            key: "id",
-          },
-          onUpdate: "CASCADE",
-          onDelete: "CASCADE",
-        },
-        brainstormingId: {
-          type: DataTypes.UUID,
-          allowNull: true,
-          references: {
-            model: "brainstormings",
             key: "id",
           },
           onUpdate: "CASCADE",

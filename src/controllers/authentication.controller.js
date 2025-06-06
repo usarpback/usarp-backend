@@ -1,7 +1,7 @@
 const UserModel = require("../models/user.model");
 const mailer = require("../config/mailer");
 const { ValidationError } = require("sequelize");
-const date_fns = require("date-fns");
+const dateFns = require("date-fns");
 const { formatBlockedAccountMessage } = require("../helpers/dateAndTime");
 
 module.exports = {
@@ -53,7 +53,7 @@ module.exports = {
           .json({ message: "Invalid email and/or password" });
       }
 
-      if (user.lockUntil && date_fns.isAfter(new Date(), user.lockUntil)) {
+      if (user.lockUntil && dateFns.isAfter(new Date(), user.lockUntil)) {
         user.loginAttempts = 0;
         user.lockUntil = null;
         await user.save();
@@ -69,7 +69,7 @@ module.exports = {
       if (!isPasswordValid) {
         user.loginAttempts += 1;
         if (user.loginAttempts >= 3) {
-          user.lockUntil = date_fns.addMinutes(new Date(), 10);
+          user.lockUntil = dateFns.addMinutes(new Date(), 10);
 
           await user.save();
 
@@ -79,7 +79,7 @@ module.exports = {
             message: blockedMessage,
           });
         } else {
-          let remainingAttempts = 3 - user.loginAttempts;
+          const remainingAttempts = 3 - user.loginAttempts;
           await user.save();
           return response.status(400).json({
             message: `Invalid email and/or password, you have ${remainingAttempts} more attempts remaining.`,
@@ -104,7 +104,6 @@ module.exports = {
     now.setMinutes(now.getMinutes() + 30);
 
     try {
-      // Find user by email address
       const user = await UserModel.findOne({
         where: {
           email,
@@ -115,16 +114,15 @@ module.exports = {
         return response.status(400).json({ message: "Invalid email" });
       }
 
-      // Generate and return token
-      const token = user.generateToken((expiresIn = "30m"));
-      const reset_link = `localhost:3333/auth/reset_password/${user.id}/${token}`;
+      const token = user.generateToken("30m");
+      const resetLink = `localhost:3333/auth/reset_password/${user.id}/${token}`;
 
       mailer.sendMail({
         to: email,
         from: "mailusarp@gmail.com",
         template: "forgot_password",
         subject: "Password Reset Request",
-        context: { reset_link },
+        context: { resetLink },
       });
 
       user.resetPasswordToken = token;
@@ -150,7 +148,7 @@ module.exports = {
         return response.status(404).json({ message: "User not found" });
       }
 
-      if (token != user.resetPasswordToken) {
+      if (token !== user.resetPasswordToken) {
         return response.status(400).json({ message: "Invalid token" });
       }
 

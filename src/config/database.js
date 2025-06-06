@@ -8,7 +8,7 @@ module.exports = {
   host: process.env.DB_HOST,
   port: process.env.LOCAL_DB_PORT,
   define: {
-    timestamps: true, // Habilitar created_at, updated_at
-    underscored: true, // Atributos em snake case
+    timestamps: true,
+    underscored: true,
   },
 };

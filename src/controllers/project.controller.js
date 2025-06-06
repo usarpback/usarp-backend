@@ -227,13 +227,28 @@ module.exports = {
             );
           }
 
-          const brainstormings = await Brainstorming.findAndCountAll({
+          const brainstormings = await Brainstorming.findAll({
             where: { projectId: project.id },
+            include: [
+              {
+                model: UserStories,
+                as: "userStories",
+                through: { attributes: [] },
+              },
+            ],
           });
 
-          const userStories = await UserStories.findAndCountAll({
-            where: { projectId: project.id },
+          const brainstormingsWithUserStoryCount = brainstormings.map((b) => {
+            const bData = b.toJSON();
+            bData.userStoriesCount = bData.userStories?.length || 0;
+            delete bData.userStories;
+            return bData;
           });
+
+          const totalUserStoriesCount = brainstormings.reduce(
+            (acc, b) => acc + (b.userStories?.length || 0),
+            0,
+          );
 
           const projectUsers = await ProjectUser.findAll({
             where: { projectId: project.id },
@@ -253,8 +268,9 @@ module.exports = {
             roleInProject: member.roleInProject,
           }));
 
-          projectData.brainstormingsCount = brainstormings.count;
-          projectData.userStoriesCount = userStories.count;
+          projectData.brainstormingsCount = brainstormings.length;
+          projectData.userStoriesCount = totalUserStoriesCount;
+          projectData.brainstormings = brainstormingsWithUserStoryCount;
 
           const { creatorId, ...projectWithoutCreatorId } = projectData;
 

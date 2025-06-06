@@ -26,9 +26,10 @@ module.exports = {
         });
       }
 
-      if (!userStories.every((id) => typeof id === "string")) {
+      if (!Array.isArray(userStories) || userStories.length === 0) {
         return response.status(400).json({
-          message: "User Stories must be an array of UUID strings.",
+          message:
+            "The 'userStories' array must contain at least one valid UUID.",
         });
       }
 
@@ -55,10 +56,7 @@ module.exports = {
         brainstormingTime,
       });
 
-      for (const userStory of validUserStories) {
-        userStory.brainstormingId = brainstorming.id;
-        await userStory.save();
-      }
+      await brainstorming.addUserStories(validUserStories);
 
       const fullBrainstorming = await Brainstorming.findOne({
         where: { id: brainstorming.id },
@@ -66,6 +64,7 @@ module.exports = {
           {
             model: UserStories,
             as: "userStories",
+            through: { attributes: [] },
           },
         ],
       });

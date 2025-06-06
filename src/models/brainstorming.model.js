@@ -4,10 +4,11 @@ const { validateDateTimeInFuture } = require("../helpers/dateAndTime");
 
 class Brainstorming extends Model {
   static associate(models) {
-    this.hasMany(models.UserStories, {
+    this.belongsToMany(models.UserStories, {
+      through: "brainstorming_userstories",
       foreignKey: "brainstormingId",
+      otherKey: "userStoryId",
       as: "userStories",
-      onDelete: "CASCADE",
     });
 
     this.belongsTo(models.User, {
