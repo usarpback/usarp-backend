@@ -4,10 +4,11 @@ const { validateDateTimeInFuture } = require("../helpers/dateAndTime");
 
 class Brainstorming extends Model {
   static associate(models) {
-    this.belongsToMany(models.Project, {
-      through: "BrainstormingProject",
+    this.belongsToMany(models.UserStories, {
+      through: "brainstorming_userstories",
       foreignKey: "brainstormingId",
-      as: "projects",
+      otherKey: "userStoryId",
+      as: "userStories",
     });
 
     this.belongsTo(models.User, {
@@ -47,7 +48,7 @@ class Brainstorming extends Model {
               msg: "The 'Brainstorming title' field cannot be empty",
             },
             is: {
-              args: /^[\p{L}0-9!@#$%^&*ç()_\-+=\[\]{}\\|:;'"<> ]+$/iu,
+              args: /^[\p{L}0-9!@#$%^&*ç()_\-+=[\]{}\\|:;'"<> ]+$/iu,
               msg: "The brainstorming title contains invalid characters",
             },
           },
@@ -55,7 +56,7 @@ class Brainstorming extends Model {
             this.setDataValue("brainstormingTitle", value.trim());
           },
         },
-        project: {
+        projectId: {
           type: DataTypes.STRING,
           allowNull: false,
           validate: {
@@ -107,18 +108,6 @@ class Brainstorming extends Model {
                   "The 'Brainstorming time' field must be in the format HH:MM and represent a valid time.",
                 );
               }
-            },
-          },
-        },
-        userStories: {
-          type: DataTypes.STRING,
-          allowNull: false,
-          validate: {
-            notNull: {
-              msg: "The 'User stories' field cannot be empty",
-            },
-            notEmpty: {
-              msg: "The 'User stories' field cannot be empty",
             },
           },
         },

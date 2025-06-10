@@ -24,7 +24,7 @@ module.exports = {
         type: Sequelize.STRING,
         allowNull: false,
       },
-      project: {
+      project_id: {
         type: Sequelize.STRING,
         allowNull: false,
       },
@@ -33,10 +33,6 @@ module.exports = {
         allowNull: false,
       },
       brainstorming_time: {
-        type: Sequelize.STRING,
-        allowNull: false,
-      },
-      user_stories: {
         type: Sequelize.STRING,
         allowNull: false,
       },

@@ -7,7 +7,7 @@ class User extends Model {
   static associate(models) {
     this.hasMany(models.Project, {
       foreignKey: "creatorId",
-      as: "projects",
+      as: "createdProjects",
       onDelete: "CASCADE",
     });
 
@@ -20,7 +20,7 @@ class User extends Model {
     this.belongsToMany(models.Project, {
       through: "ProjectUser",
       foreignKey: "memberEmail",
-      as: "projects",
+      as: "memberProjects",
     });
 
     this.hasMany(models.ProjectUser, {
@@ -28,6 +28,7 @@ class User extends Model {
       as: "projectMemberships",
     });
   }
+
   static init(sequelize) {
     super.init(
       {
@@ -196,7 +197,7 @@ class User extends Model {
               msg: "The 'Organization' field cannot be empty",
             },
             is: {
-              args: /^[\p{L}0-9!@#$%^&*ç()_\-+=\[\]{}\\|:;'"<> ]+$/iu,
+              args: /^[\p{L}0-9!@#$%^&*ç()_\-+=[\]{}\\|:;'"<> ]+$/iu,
               msg: "The 'Organization' field contains invalid characters",
             },
           },
@@ -231,7 +232,7 @@ class User extends Model {
       },
       {
         sequelize,
-        modelName: "Users",
+        modelName: "User",
         tableName: "users",
         hooks: {
           beforeCreate: async (user) => {

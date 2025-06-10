@@ -1,11 +1,13 @@
-const { Sequelize } = require("sequelize");
+const {
+  sequelize,
+  Sequelize,
+  User,
+  Project,
+  Brainstorming,
+  UserStories,
+  ProjectUser,
+} = require("../database");
 const { ValidationError } = require("sequelize");
-const User = require("../models/user.model");
-const Project = require("../models/project.model");
-const Brainstormings = require("../models/brainstorming.model");
-// const UserStories = require("../models/userStories.model");
-const ProjectUser = require("../models/projectUser.model");
-const sequelize = require("../database/index");
 const { Op } = require("sequelize");
 
 module.exports = {
@@ -314,9 +316,28 @@ module.exports = {
             );
           }
 
-          const brainstormings = await Brainstormings.findAndCountAll({
-            where: { project: project.id },
+          const brainstormings = await Brainstorming.findAll({
+            where: { projectId: project.id },
+            include: [
+              {
+                model: UserStories,
+                as: "userStories",
+                through: { attributes: [] },
+              },
+            ],
           });
+
+          const brainstormingsWithUserStoryCount = brainstormings.map((b) => {
+            const bData = b.toJSON();
+            bData.userStoriesCount = bData.userStories?.length || 0;
+            delete bData.userStories;
+            return bData;
+          });
+
+          const totalUserStoriesCount = brainstormings.reduce(
+            (acc, b) => acc + (b.userStories?.length || 0),
+            0,
+          );
 
           const projectUsers = await ProjectUser.findAll({
             where: { projectId: project.id },
@@ -336,7 +357,9 @@ module.exports = {
             roleInProject: member.roleInProject,
           }));
 
-          projectData.brainstormingsCount = brainstormings.count;
+          projectData.brainstormingsCount = brainstormings.length;
+          projectData.userStoriesCount = totalUserStoriesCount;
+          projectData.brainstormings = brainstormingsWithUserStoryCount;
 
           const { creatorId, ...projectWithoutCreatorId } = projectData;
 
