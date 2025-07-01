@@ -133,6 +133,150 @@ module.exports = {
     }
   },
 
+  async updateProject(request, response) {
+    try {
+      const { id } = request.params;
+      const updateData = request.body;
+      console.log("-----------------------------------------");
+      console.log("id", id);
+      console.log("Update Data:", updateData);
+
+      // Verificar se o id do projeto foi fornecido
+      if (!id) {
+        return response.status(400).json({
+          success: false,
+          message: "Project ID is required",
+        });
+      }
+
+      // Buscar o projeto existente
+      const existingProject = await Project.findByPk(id); // Use findByPk em vez de findById
+
+      if (!existingProject) {
+        return response.status(404).json({
+          success: false,
+          message: "Project not found",
+        });
+      }
+
+      // Verificar se o usuário tem permissão para atualizar
+      if (existingProject.creatorId !== request.userId) {
+        return response.status(403).json({
+          success: false,
+          message: "Not authorized to update this project",
+        });
+      }
+
+      // Iniciar uma transação para garantir consistência
+      const t = await sequelize.transaction();
+
+      try {
+        // 1. Atualizar os dados básicos do projeto
+        const { projectTeam, ...projectData } = updateData;
+
+        await existingProject.update(
+          {
+            ...projectData,
+            updatedAt: new Date(),
+          },
+          { transaction: t },
+        );
+
+        // 2. Atualizar os membros da equipe, se fornecido
+        if (projectTeam && Array.isArray(projectTeam)) {
+          // Opcional: Remover membros atuais da equipe (exceto o criador)
+          await ProjectUser.destroy({
+            where: {
+              projectId: id,
+              memberId: { [Op.ne]: existingProject.creatorId },
+            },
+            transaction: t,
+          });
+
+          // Adicionar novos membros
+          for (const member of projectTeam) {
+            const { email, roleInProject } = member;
+
+            // Evitar duplicação ao encontrar o usuário
+            const user = await User.findOne({
+              where: { email },
+              transaction: t,
+            });
+
+            if (!user) {
+              await t.rollback();
+              return response.status(400).json({
+                message: `User with email '${email}' not found.`,
+              });
+            }
+
+            // Verificar se já existe na equipe
+            const existingMember = await ProjectUser.findOne({
+              where: {
+                memberEmail: email,
+                projectId: id,
+              },
+              transaction: t,
+            });
+
+            // Se não existe, adiciona
+            if (!existingMember) {
+              await ProjectUser.create(
+                {
+                  projectId: id,
+                  memberId: user.id,
+                  fullName: user.fullName,
+                  memberEmail: email,
+                  roleInProject,
+                },
+                { transaction: t },
+              );
+            } else {
+              // Se existe, atualiza o papel
+              await existingMember.update(
+                { roleInProject },
+                { transaction: t },
+              );
+            }
+          }
+        }
+
+        await t.commit();
+
+        // Buscar o projeto atualizado com membros da equipe
+        const updatedProject = await Project.findByPk(id);
+        const projectTeamMembers = await ProjectUser.findAll({
+          where: { projectId: id },
+          attributes: ["memberId", "fullName", "memberEmail", "roleInProject"],
+        });
+
+        response.status(200).json({
+          success: true,
+          message: "Project updated successfully",
+          data: {
+            ...updatedProject.toJSON(),
+            projectTeam: projectTeamMembers.map((member) => ({
+              memberId: member.memberId,
+              fullName: member.fullName,
+              email: member.memberEmail,
+              roleInProject: member.roleInProject,
+            })),
+          },
+        });
+      } catch (innerError) {
+        await t.rollback();
+        throw innerError; // Repassa para o catch externo
+      }
+    } catch (error) {
+      console.error("Error updating project:", error);
+      response.status(500).json({
+        success: false,
+        message: "Internal server error",
+        error: error.message,
+      });
+    }
+  },
+
   async getAllUserCreatedProjectsAndCounts(request, response) {
     try {
       // Extrai parâmetros de paginação, filtros e ordenação da query string
@@ -205,7 +349,7 @@ module.exports = {
           projectData.creator = creator.toJSON();
 
           const projectUsers = await ProjectUser.findAll({
-            where: { projectId: project.id },
+            where: { projectId: project.id }, // Use projectId em vez de id
             attributes: [
               "memberId",
               "fullName",
@@ -246,14 +390,14 @@ module.exports = {
     try {
       const userEmail = request.userEmail;
 
-      // Busca os projectIds associados ao usuário
+      // Busca os ids associados ao usuário
       const projectMemberships = await ProjectUser.findAll({
         where: { memberEmail: userEmail },
-        attributes: ["projectId"],
+        attributes: ["id"],
       });
 
-      const projectIds = projectMemberships.map(
-        (membership) => membership.projectId,
+      const ids = projectMemberships.map(
+        (membership) => membership.id,
       );
 
       // Extrai os parâmetros de paginação, filtro e ordenação da query string
@@ -272,8 +416,8 @@ module.exports = {
 
       // Monta a condição "where" para os filtros
       const projectFilter = {
-        // Garante que os projetos pesquisados estão entre os projectIds do usuário
-        id: { [Op.in]: projectIds },
+        // Garante que os projetos pesquisados estão entre os ids do usuário
+        id: { [Op.in]: ids },
         ...(filterId ? { id: filterId } : {}),
         ...(status ? { status } : {}),
         ...(projectName
