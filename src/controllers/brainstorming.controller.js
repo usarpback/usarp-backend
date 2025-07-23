@@ -90,6 +90,7 @@ module.exports = {
         where: {
           creatorId: request.userId,
         },
+        distinct: true,
         include: [
           {
             model: UserStories,

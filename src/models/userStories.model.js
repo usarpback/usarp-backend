@@ -103,6 +103,17 @@ class UserStories extends Model {
             this.setDataValue("confirmation", value.trim());
           },
         },
+        status: {
+          type: DataTypes.ENUM("Ativo", "Inativo"),
+          allowNull: true,
+          defaultValue: "Ativo",
+          validate: {
+            isIn: {
+              args: [["Ativo", "Inativo"]],
+              msg: "Status must be 'Ativo' or 'Inativo'.",
+            },
+          },
+        },
         creatorId: {
           type: DataTypes.UUID,
           allowNull: false,

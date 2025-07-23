@@ -30,6 +30,17 @@ module.exports = {
         type: Sequelize.TEXT,
         allowNull: true,
       },
+      status: {
+        type: Sequelize.ENUM("Ativo", "Inativo"),
+        allowNull: true,
+        defaultValue: "Ativo",
+        validate: {
+          isIn: {
+            args: [["Ativo", "Inativo"]],
+            msg: "Status must be 'Ativo' or 'Inativo'.",
+          },
+        },
+      },
       creator_id: {
         type: Sequelize.UUID,
         allowNull: false,
