@@ -63,6 +63,71 @@ module.exports = {
     }
   },
 
+  async registerListUserStories(request, response) {
+    // 1. Desestruturar a nova estrutura do corpo da requisição
+    const { projectId, userStories } = request.body;
+    const creatorId = request.userId;
+
+    // Validações iniciais
+    if (!projectId) {
+      return response.status(400).json({
+        message:
+          "The 'projectId' field is required and must reference an existing project.",
+      });
+    }
+
+    if (!Array.isArray(userStories) || userStories.length === 0) {
+      return response.status(400).json({
+        message:
+          "The 'userStories' field is required and must be a non-empty array.",
+      });
+    }
+
+    try {
+      const projectExists = await Project.findByPk(projectId);
+      if (!projectExists) {
+        return response.status(404).json({
+          message: `No project found with id '${projectId}'.`,
+        });
+      }
+
+      // 2. Preparar os dados para a inserção em massa
+      // Adiciona o creatorId e o projectId a cada história de usuário
+      const storiesToCreate = userStories.map((story) => {
+        // Validação para cada item da lista
+        if (!story.userStorieNumber || !story.userStoriesTitle) {
+          throw new Error(
+            "All stories must have 'userStorieNumber' and 'userStoriesTitle'.",
+          );
+        }
+
+        return {
+          ...story, // Inclui todos os campos de uma história: userStorieNumber, userStoriesTitle, etc.
+          creatorId,
+          projectId,
+        };
+      });
+
+      // 3. Usar bulkCreate para inserir todas as histórias de uma vez
+      const createdStories = await UserStories.bulkCreate(storiesToCreate);
+
+      return response.status(201).json(createdStories);
+    } catch (error) {
+      if (error instanceof ValidationError) {
+        const validationErrors = error.errors.map((err) => err.message);
+        return response.status(400).json({
+          message: "Validation error",
+          errors: validationErrors,
+        });
+      } else if (error.message) {
+        // Captura o erro lançado pela validação manual no map
+        return response.status(400).json({ message: error.message });
+      }
+      console.error(error); // Log do erro para depuração
+      return response.status(500).json({ message: "Internal server error" });
+    }
+  },
+
   async getUserStoriesByProject(request, response) {
     const { projectId } = request.params;
     const page = parseInt(request.query.page, 10) || 1;
