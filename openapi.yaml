@@ -1,0 +1,1899 @@
+openapi: 3.0.1
+info:
+  title: USARP Tool API
+  description: USARP Tool é uma ferramenta de apoio à adoção do método USARP na elicitação e especificação de requisitos de usabilidade em projetos de software.
+  version: "1.0.0"
+  contact:
+    name: USARP Tool Backend Team
+    email: usarpback@gmail.com
+servers:
+  - url: http://localhost:3333
+    description: Servidor local de desenvolvimento
+
+tags:
+  - name: Auth
+    description: Operações de autenticação e recuperação de conta — registro, login, solicitação de recuperação por e-mail e reset de senha usando token curto.
+  - name: Users
+    description: Operações relacionadas a perfis de usuário — listar usuários (administrativo), obter perfil próprio, atualizar perfil, alterar senha e deletar conta (ações autenticadas).
+  - name: Projects
+    description: Gerenciamento de projetos - criação em transação, listagem de projetos criados pelo usuário com filtros/paginação, e detalhes de projetos dos quais o usuário é membro.
+  - name: UserStories
+    description: Criação e listagem de user stories — endpoints suportam criação única e em lote (bulk) e listagem paginada por projeto.
+  - name: Brainstorming
+    description: Criação de sessões de brainstorming associadas a projetos e user stories, e listagem/contagem das sessões do usuário (inclui user stories relacionadas).
+
+components:
+  schemas:
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: UUID do usuário
+        fullName:
+          type: string
+          description: Nome completo do usuário
+        email:
+          type: string
+          format: email
+          description: E-mail do usuário
+        gender:
+          type: string
+          description: Gênero (valores permitidos definidos no model)
+          enum:
+            - Feminino
+            - Masculino
+            - Não binário
+            - Prefiro não informar
+        birthdate:
+          type: string
+          description: Data de nascimento no formato DD/MM/AAAA
+          example: "31/12/1990"
+        profile:
+          type: string
+          description: Perfil do usuário
+          enum:
+            - Estudante de Graduação
+            - Estudante de Pós-Graduação
+            - Professor
+            - Profissional da Indústria
+        organization:
+          type: string
+          description: Organização / instituição do usuário
+        loginAttempts:
+          type: integer
+          description: Número de tentativas de login falhas
+        deleteAttempts:
+          type: integer
+          description: Número de tentativas de remoção falhas
+        lockUntil:
+          type: string
+          format: date-time
+          description: Data/hora até a qual a conta está bloqueada (se aplicável)
+      required:
+        - id
+        - fullName
+        - email
+        - gender
+        - birthdate
+        - profile
+        - organization
+
+    UsersListResponse:
+      type: object
+      properties:
+        users:
+          type: array
+          items:
+            $ref: "#/components/schemas/User"
+
+    UpdateUserRequest:
+      type: object
+      description: Campos que podem ser atualizados. Campos omitidos serão mantidos.
+      properties:
+        fullName:
+          type: string
+          example: "João Atualizado"
+        email:
+          type: string
+          format: email
+          example: "joao.atualizado@exemplo.com"
+        gender:
+          type: string
+          enum:
+            - Feminino
+            - Masculino
+            - Não binário
+            - Prefiro não informar
+        birthdate:
+          type: string
+          example: "02/02/2000"
+        profile:
+          type: string
+          enum:
+            - Estudante de Graduação
+            - Estudante de Pós-Graduação
+            - Professor
+            - Profissional da Indústria
+        organization:
+          type: string
+          example: "Universidade Atualizada"
+
+    PasswordUpdateRequest:
+      type: object
+      properties:
+        currentPassword:
+          type: string
+          example: "OldPass1!"
+        newPassword:
+          type: string
+          description: >-
+            Nova senha (8-15 caracteres, pelo menos 1 minúscula, 1 maiúscula,
+            1 número, 1 caractere especial, sem espaços).
+          example: "NewPass1!"
+        confirmNewPassword:
+          type: string
+          example: "NewPass1!"
+      required:
+        - currentPassword
+        - newPassword
+        - confirmNewPassword
+
+    DeleteAccountRequest:
+      type: object
+      properties:
+        password:
+          type: string
+          example: "CurrentPass1!"
+      required:
+        - password
+
+    SignupRequest:
+      type: object
+      properties:
+        fullName:
+          type: string
+          description: Nome completo (apenas letras e espaços)
+          example: "João da Silva"
+        email:
+          type: string
+          format: email
+          example: "joao.silva@exemplo.com"
+        password:
+          type: string
+          description: >-
+            Senha (8-15 caracteres, pelo menos 1 minúscula, 1 maiúscula, 1 número,
+            1 caractere especial, sem espaços)
+          example: "Abcdef1!"
+        gender:
+          type: string
+          enum:
+            - Feminino
+            - Masculino
+            - Não binário
+            - Prefiro não informar
+          example: "Prefiro não informar"
+        birthdate:
+          type: string
+          description: Formato DD/MM/AAAA
+          example: "01/01/2000"
+        profile:
+          type: string
+          enum:
+            - Estudante de Graduação
+            - Estudante de Pós-Graduação
+            - Professor
+            - Profissional da Indústria
+          example: "Estudante de Graduação"
+        organization:
+          type: string
+          example: "Universidade X"
+      required:
+        - fullName
+        - email
+        - password
+        - gender
+        - birthdate
+        - profile
+        - organization
+
+    SigninRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+          example: "joao.silva@exemplo.com"
+        password:
+          type: string
+          example: "Abcdef1!"
+      required:
+        - email
+        - password
+
+    AuthResponse:
+      type: object
+      properties:
+        token:
+          type: string
+          description: JWT para autenticação em rotas protegidas
+
+    ForgotPasswordRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+          example: "joao.silva@exemplo.com"
+      required:
+        - email
+
+    ResetPasswordRequest:
+      type: object
+      properties:
+        password:
+          type: string
+          description: Nova senha (mesmas regras de validação do model)
+          example: "NewPass1!"
+      required:
+        - password
+
+    MessageResponse:
+      type: object
+      properties:
+        message:
+          type: string
+
+    ErrorResponse:
+      type: object
+      properties:
+        message:
+          type: string
+        errors:
+          type: array
+          items:
+            type: string
+
+    UnauthorizedResponse:
+      type: object
+      properties:
+        message:
+          type: string
+      example:
+        message: "Unauthorized - token is missing or invalid"
+
+    Project:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: "a1b2c3d4-1111-2222-3333-abcdef123456"
+        projectName:
+          type: string
+          example: "Sistema de Recomendação"
+        description:
+          type: string
+          example: "Projeto sobre recomendação de conteúdo usando ML"
+        creatorId:
+          type: string
+          format: uuid
+        status:
+          type: string
+          example: "active"
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    ProjectTeamMember:
+      type: object
+      properties:
+        memberId:
+          type: string
+          format: uuid
+          example: "f1e2d3c4-aaaa-bbbb-cccc-1234567890ab"
+        fullName:
+          type: string
+          example: "Maria Souza"
+        email:
+          type: string
+          format: email
+          example: "maria.souza@exemplo.com"
+        roleInProject:
+          type: string
+          example: "Desenvolvedor"
+
+    CreatorSummary:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        fullName:
+          type: string
+        email:
+          type: string
+          format: email
+        organization:
+          type: string
+
+    BrainstormingSummary:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        userStoriesCount:
+          type: integer
+          example: 3
+
+    ProjectCreateRequest:
+      type: object
+      description: Payload para criação de projeto com time (projectTeam)
+      properties:
+        projectName:
+          type: string
+          example: "Sistema de Recomendação"
+        description:
+          type: string
+          example: "Descrição do projeto..."
+        projectTeam:
+          type: array
+          description: Lista de membros a convidar no formato { email, roleInProject }
+          items:
+            type: object
+            properties:
+              email:
+                type: string
+                format: email
+                example: "membro@exemplo.com"
+              roleInProject:
+                type: string
+                example: "Desenvolvedor"
+      required:
+        - projectName
+        - description
+        - projectTeam
+
+    ProjectResponse:
+      type: object
+      properties:
+        project:
+          $ref: "#/components/schemas/Project"
+        creator:
+          $ref: "#/components/schemas/CreatorSummary"
+        projectTeam:
+          type: array
+          items:
+            $ref: "#/components/schemas/ProjectTeamMember"
+
+    PaginatedProjectsResponse:
+      type: object
+      properties:
+        count:
+          type: integer
+          description: total de projetos encontrados
+        pagination:
+          type: object
+          properties:
+            offset:
+              type: integer
+            limit:
+              type: integer
+        projects:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+                format: uuid
+              projectName:
+                type: string
+              description:
+                type: string
+              status:
+                type: string
+              createdAt:
+                type: string
+                format: date-time
+              updatedAt:
+                type: string
+                format: date-time
+              creator:
+                $ref: "#/components/schemas/CreatorSummary"
+              projectTeam:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ProjectTeamMember"
+
+    ProjectsDetailsResponse:
+      type: object
+      properties:
+        projects:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+                format: uuid
+              projectName:
+                type: string
+              description:
+                type: string
+              status:
+                type: string
+              createdAt:
+                type: string
+                format: date-time
+              updatedAt:
+                type: string
+                format: date-time
+              creator:
+                $ref: "#/components/schemas/CreatorSummary"
+              projectTeam:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ProjectTeamMember"
+              brainstormingsCount:
+                type: integer
+              userStoriesCount:
+                type: integer
+              brainstormings:
+                type: array
+                items:
+                  $ref: "#/components/schemas/BrainstormingSummary"
+        pagination:
+          type: object
+          properties:
+            offset:
+              type: integer
+            limit:
+              type: integer
+            total:
+              type: integer
+
+    UserStory:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: "us-123e4567-e89b-12d3-a456-426614174000"
+        userStorieNumber:
+          type: integer
+          example: 1
+        userStoriesTitle:
+          type: string
+          example: "Como usuário, quero autenticar-me no sistema"
+        card:
+          type: string
+          description: Texto do cartão (opcional)
+          example: "Cartão: Login"
+        conversation:
+          type: string
+          description: Notas da conversa (opcional)
+          example: "Discussão sobre critérios de aceitação"
+        confirmation:
+          type: string
+          description: Critérios de aceitação / confirmação (opcional)
+          example: "Deve permitir login com e-mail e senha"
+        status:
+          type: string
+          example: "open"
+        creatorId:
+          type: string
+          format: uuid
+          description: UUID do usuário que criou a user story
+        projectId:
+          type: string
+          format: uuid
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - userStorieNumber
+        - userStoriesTitle
+        - projectId
+        - creatorId
+
+    UserStoryCreate:
+      type: object
+      properties:
+        userStorieNumber:
+          type: integer
+          example: 1
+        userStoriesTitle:
+          type: string
+          example: "Como usuário, quero X"
+        card:
+          type: string
+          example: "Cartão exemplo"
+        conversation:
+          type: string
+          example: "Conversa exemplo"
+        confirmation:
+          type: string
+          example: "Critério de aceitação exemplo"
+        projectId:
+          type: string
+          format: uuid
+          example: "proj-123e4567-e89b-12d3-a456-426614174000"
+      required:
+        - userStorieNumber
+        - userStoriesTitle
+        - projectId
+
+    BulkUserStoriesRequest:
+      type: object
+      description: Requisição para inserir várias user stories de uma vez
+      properties:
+        projectId:
+          type: string
+          format: uuid
+          example: "proj-123e4567-e89b-12d3-a456-426614174000"
+        userStories:
+          type: array
+          items:
+            type: object
+            properties:
+              userStorieNumber:
+                type: integer
+                example: 1
+              userStoriesTitle:
+                type: string
+                example: "Como usuário, quero X"
+              card:
+                type: string
+              conversation:
+                type: string
+              confirmation:
+                type: string
+            required:
+              - userStorieNumber
+              - userStoriesTitle
+      required:
+        - projectId
+        - userStories
+
+    PaginatedUserStoriesResponse:
+      type: object
+      properties:
+        projectId:
+          type: string
+          format: uuid
+        sort:
+          type: string
+          enum:
+            - asc
+            - desc
+        userStories:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+                format: uuid
+              userStorieNumber:
+                type: integer
+              userStoriesTitle:
+                type: string
+              status:
+                type: string
+              createdAt:
+                type: string
+                format: date-time
+        pagination:
+          type: object
+          properties:
+            page:
+              type: integer
+            pageSize:
+              type: integer
+            totalPages:
+              type: integer
+            totalItems:
+              type: integer
+
+    UserStorySummary:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: "us-123e4567-e89b-12d3-a456-426614174000"
+        userStorieNumber:
+          type: integer
+          example: 1
+        userStoriesTitle:
+          type: string
+          example: "Como usuário, quero autenticar-me"
+        status:
+          type: string
+          example: "open"
+        createdAt:
+          type: string
+          format: date-time
+
+    BrainstormingCreateRequest:
+      type: object
+      description: Payload para criar uma sessão de brainstorming. `project` deve ser UUID do projeto.
+      properties:
+        brainstormingTitle:
+          type: string
+          example: "Sessão inicial - Login"
+        project:
+          type: string
+          format: uuid
+          description: UUID do projeto (campo `project` no controller)
+          example: "proj-123e4567-e89b-12d3-a456-426614174000"
+        brainstormingDate:
+          type: string
+          description: Data no formato desejado pela aplicação (ex. YYYY-MM-DD)
+          example: "2025-10-01"
+        brainstormingTime:
+          type: string
+          description: Hora (ex. HH:mm)
+          example: "14:00"
+        userStories:
+          type: array
+          description: Array de UUIDs de user stories que serão associadas à sessão
+          items:
+            type: string
+            format: uuid
+          example:
+            - "us-123e4567-e89b-12d3-a456-426614174000"
+            - "us-987e6543-e21b-12d3-a456-426614174999"
+      required:
+        - brainstormingTitle
+        - project
+        - userStories
+
+    Brainstorming:
+      type: object
+      description: Representação de uma sessão de brainstorming (inclui user stories associadas).
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: "br-123e4567-e89b-12d3-a456-426614174000"
+        brainstormingTitle:
+          type: string
+          example: "Sessão inicial - Login"
+        projectId:
+          type: string
+          format: uuid
+          example: "proj-123e4567-e89b-12d3-a456-426614174000"
+        creatorId:
+          type: string
+          format: uuid
+          example: "creator-uuid-1111"
+        brainstormingDate:
+          type: string
+          example: "2025-10-01"
+        brainstormingTime:
+          type: string
+          example: "14:00"
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        userStories:
+          type: array
+          items:
+            $ref: "#/components/schemas/UserStorySummary"
+
+    BrainstormingsFindAndCount:
+      type: object
+      properties:
+        count:
+          type: integer
+          example: 2
+        rows:
+          type: array
+          items:
+            $ref: "#/components/schemas/Brainstorming"
+
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+paths:
+  /auth/signup:
+    post:
+      tags:
+        - Auth
+      summary: Cadastrar novo usuário
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SignupRequest"
+      responses:
+        "201":
+          description: Usuário criado com sucesso (sem senha retornada)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+              example:
+                id: "e7b8c9d2-1a2b-4c3d-9f0a-123456789abc"
+                fullName: "João da Silva"
+                email: "joao.silva@exemplo.com"
+                gender: "Prefiro não informar"
+                birthdate: "01/01/2000"
+                profile: "Estudante de Graduação"
+                organization: "Universidade X"
+                loginAttempts: 0
+                deleteAttempts: 0
+        "400":
+          description: Erros de validação
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                message: "Validation errors"
+                errors:
+                  - "The 'email' field is required."
+                  - "The password must be at least 8 and at most 15 characters long..."
+        "500":
+          description: Erro interno do servidor
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+              example:
+                message: "Internal server error"
+
+  /auth/signin:
+    post:
+      tags:
+        - Auth
+      summary: Autenticar usuário e obter token JWT
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SigninRequest"
+      responses:
+        "200":
+          description: Autenticação bem-sucedida — retorna token JWT
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+              example:
+                token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+        "400":
+          description: Credenciais inválidas / usuário não encontrado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+              example:
+                message: "Invalid email and/or password"
+        "403":
+          description: Conta bloqueada por tentativas excessivas
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+              example:
+                message: "Account locked until 2025-10-01T14:52:00Z"
+        "500":
+          description: Erro interno do servidor
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+              example:
+                message: "Internal server error"
+
+  /auth/forgot_password:
+    post:
+      tags:
+        - Auth
+      summary: Solicitar recuperação de senha (envia e-mail com link)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ForgotPasswordRequest"
+      responses:
+        "200":
+          description: E-mail de recuperação enviado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+              example:
+                message: "The recovery email was sent to the user"
+        "400":
+          description: E-mail inválido (usuário não encontrado)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+              example:
+                message: "Invalid email"
+        "500":
+          description: Erro interno do servidor
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+              example:
+                message: "Internal server error"
+
+  /auth/reset_password/{userId}/{token}:
+    post:
+      tags:
+        - Auth
+      summary: Resetar senha usando token enviado por e-mail
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          description: UUID do usuário (parâmetro userId usado no link de reset)
+          schema:
+            type: string
+            format: uuid
+            example: "e7b8c9d2-1a2b-4c3d-9f0a-123456789abc"
+        - name: token
+          in: path
+          required: true
+          description: Token de reset (JWT curto gerado pelo método generateToken("30m"))
+          schema:
+            type: string
+            example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ResetPasswordRequest"
+      responses:
+        "200":
+          description: Senha resetada com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+              example:
+                message: "The password was successfully reset"
+        "400":
+          description: Token inválido ou expirado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+              examples:
+                invalid_token:
+                  value:
+                    message: "Invalid token"
+                token_expired:
+                  value:
+                    message: "Token expired"
+        "404":
+          description: Usuário não encontrado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+              example:
+                message: "User not found"
+        "500":
+          description: Erro interno do servidor / Erros de validação
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                message: "Validation errors"
+                errors:
+                  - "The 'birth date' field must be a valid date and in the format DD/MM/AAAA."
+
+  /users:
+    get:
+      tags:
+        - Users
+      summary: Listar todos os usuários (sem senha)
+      description: >
+        Retorna todos os usuários cadastrados. O campo `password` não é
+        retornado por motivos de segurança.
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Lista de usuários retornada com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UsersListResponse"
+              examples:
+                sample:
+                  value:
+                    users:
+                      - id: "e7b8c9d2-1a2b-4c3d-9f0a-123456789abc"
+                        fullName: "João da Silva"
+                        email: "joao.silva@exemplo.com"
+                        gender: "Prefiro não informar"
+                        birthdate: "01/01/2000"
+                        profile: "Estudante de Graduação"
+                        organization: "Universidade X"
+                        loginAttempts: 0
+                        deleteAttempts: 0
+        "401":
+          description: Token ausente ou inválido
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UnauthorizedResponse"
+        "500":
+          description: Erro interno do servidor
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+              example:
+                message: "Internal server error"
+
+  /user:
+    get:
+      tags:
+        - Users
+      summary: Retornar perfil do usuário autenticado
+      description: >
+        Usa `request.userId` (preenchido pelo middleware de autenticação)
+        para buscar o usuário. Retorna 404 se o usuário não existir.
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Perfil do usuário retornado com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+              example:
+                id: "e7b8c9d2-1a2b-4c3d-9f0a-123456789abc"
+                fullName: "João da Silva"
+                email: "joao.silva@exemplo.com"
+                gender: "Prefiro não informar"
+                birthdate: "01/01/2000"
+                profile: "Estudante de Graduação"
+                organization: "Universidade X"
+                loginAttempts: 0
+                deleteAttempts: 0
+        "401":
+          description: Token ausente ou inválido
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UnauthorizedResponse"
+        "404":
+          description: Usuário não encontrado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+              example:
+                message: "User not found"
+        "500":
+          description: Erro interno do servidor
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+              example:
+                message: "Internal server error"
+
+    put:
+      tags:
+        - Users
+      summary: Atualizar dados básicos do perfil do usuário autenticado
+      description: >
+        Atualiza os campos enviados no corpo. Campos omitidos permanecem com
+        os valores atuais. Validações do model podem retornar 400 com lista de erros.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateUserRequest"
+            examples:
+              partial_update:
+                value:
+                  fullName: "João Atualizado"
+                  organization: "Universidade Atualizada"
+      responses:
+        "200":
+          description: Usuário atualizado com sucesso (retorna usuário sem senha)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+              example:
+                id: "e7b8c9d2-1a2b-4c3d-9f0a-123456789abc"
+                fullName: "João Atualizado"
+                email: "joao.silva@exemplo.com"
+                gender: "Prefiro não informar"
+                birthdate: "01/01/2000"
+                profile: "Estudante de Graduação"
+                organization: "Universidade Atualizada"
+                loginAttempts: 0
+                deleteAttempts: 0
+        "400":
+          description: Erros de validação (ex. formato de data, e-mail inválido)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                message: "Validation errors"
+                errors:
+                  - "The 'birth date' field must be a valid date and in the format DD/MM/AAAA."
+        "401":
+          description: Token ausente ou inválido
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UnauthorizedResponse"
+        "404":
+          description: Usuário não encontrado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+              example:
+                message: "User not found"
+        "500":
+          description: Erro interno do servidor
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+              example:
+                message: "Internal server error"
+
+  /user/password-update:
+    put:
+      tags:
+        - Users
+      summary: Atualizar senha do usuário autenticado
+      description: >
+        Verifica `currentPassword`, confere `newPassword` com `confirmNewPassword`,
+        impede que a nova senha seja igual à antiga e atualiza a senha.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PasswordUpdateRequest"
+            examples:
+              change:
+                value:
+                  currentPassword: "OldPass1!"
+                  newPassword: "NewPass1!"
+                  confirmNewPassword: "NewPass1!"
+      responses:
+        "200":
+          description: Senha atualizada com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+              example:
+                message: "Password updated successfully!"
+        "400":
+          description: Requisição inválida (campos ausentes, senhas não conferem, senha atual incorreta, nova senha igual à antiga)
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: "#/components/schemas/MessageResponse"
+                  - $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                missing_fields:
+                  value:
+                    message: "All fields are required"
+                mismatch:
+                  value:
+                    message: "Passwords do not match"
+                wrong_current:
+                  value:
+                    message: "Current password is incorrect"
+                same_as_old:
+                  value:
+                    message: "New password cannot be the same as the old password"
+        "401":
+          description: Token ausente ou inválido
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UnauthorizedResponse"
+        "404":
+          description: Usuário não encontrado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+              example:
+                message: "User not found"
+        "500":
+          description: Erro interno do servidor / erros de validação do model
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /user/delete:
+    delete:
+      tags:
+        - Users
+      summary: Deletar conta do usuário autenticado
+      description: >
+        Recebe a senha no corpo da requisição. Faz verificação de tentativas
+        e bloqueio antes de deletar a conta. Em caso de falha na senha, incrementa
+        `deleteAttempts` e pode bloquear a conta (24h) após 3 tentativas.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DeleteAccountRequest"
+            examples:
+              delete_example:
+                value:
+                  password: "CurrentPass1!"
+      responses:
+        "200":
+          description: Conta deletada com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+              example:
+                message: "Account deleted successfully!"
+        "400":
+          description: Senha não informada ou senha incorreta (com contagem de tentativas)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+              examples:
+                missing_password:
+                  value:
+                    message: "The 'password' field is mandatory"
+                incorrect_password:
+                  value:
+                    message: "Incorrect password, you have 2 more attempts remaining."
+        "401":
+          description: Token ausente ou inválido
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UnauthorizedResponse"
+        "403":
+          description: Conta bloqueada após número máximo de tentativas (retorna mensagem com data/hora de desbloqueio)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+              example:
+                message: "Account locked until 2025-10-02T14:00:00Z"
+        "404":
+          description: Usuário não encontrado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+              example:
+                message: "User not found"
+        "500":
+          description: Erro interno do servidor / erros de validação
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /project/create:
+    post:
+      tags:
+        - Projects
+      summary: Criar um novo projeto e convidar membros
+      description: >
+        Cria projeto em transação serializável. Valida se cada e-mail do `projectTeam` existe no sistema,
+        impede convites duplicados por e-mail e garante que o criador esteja na equipe (como "Moderador") caso não seja incluído.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProjectCreateRequest"
+            example:
+              projectName: "Projeto Exemplo"
+              description: "Projeto para pesquisa X"
+              projectTeam:
+                - email: "maria@exemplo.com"
+                  roleInProject: "Desenvolvedora"
+                - email: "jose@exemplo.com"
+                  roleInProject: "Pesquisador"
+      responses:
+        "201":
+          description: Projeto criado com sucesso (retorna projeto, criador e time)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProjectResponse"
+              example:
+                project:
+                  id: "a1b2c3d4-1111-2222-3333-abcdef123456"
+                  projectName: "Projeto Exemplo"
+                  description: "Projeto para pesquisa X"
+                  status: "active"
+                  createdAt: "2025-09-30T12:00:00Z"
+                  updatedAt: "2025-09-30T12:00:00Z"
+                creator:
+                  id: "creator-uuid-1111"
+                  fullName: "Carlos Alberto"
+                  email: "carlos@exemplo.com"
+                  organization: "Universidade X"
+                projectTeam:
+                  - memberId: "member-uuid-2222"
+                    fullName: "Maria Souza"
+                    email: "maria@exemplo.com"
+                    roleInProject: "Desenvolvedora"
+                  - memberId: "creator-uuid-1111"
+                    fullName: "Carlos Alberto"
+                    email: "carlos@exemplo.com"
+                    roleInProject: "Moderador"
+        "400":
+          description: Requisição inválida (ex. e-mail não encontrado, membro já convidado, validação)
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: "#/components/schemas/MessageResponse"
+                  - $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                missing_field:
+                  value:
+                    message: "Validation error"
+                    errors:
+                      - "projectTeam must be a non-empty array"
+                email_not_found:
+                  value:
+                    message: "User with email 'x@exemplo.com' not found."
+                already_invited:
+                  value:
+                    message: "Email address 'x@exemplo.com' has already been invited to the project. Please enter a different email."
+        "401":
+          description: Token ausente ou inválido
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UnauthorizedResponse"
+        "500":
+          description: Erro interno do servidor / transação revertida
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+
+  /project/owned-projects:
+    get:
+      tags:
+        - Projects
+      summary: Listar projetos criados pelo usuário (com paginação, filtros e ordenação)
+      description: >
+        Retorna projetos cujo `creatorId` é o usuário autenticado.
+        Query params: offset, limit, id, status, projectName, orderBy (createdAt|updatedAt), orderDirection (asc|desc).
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            default: 0
+          description: Offset para paginação
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 10
+          description: Limite por página
+        - name: id
+          in: query
+          schema:
+            type: string
+            format: uuid
+          description: Filtrar por ID de projeto
+        - name: status
+          in: query
+          schema:
+            type: string
+          description: Filtrar por status do projeto
+        - name: projectName
+          in: query
+          schema:
+            type: string
+          description: Filtro por nome (LIKE)
+        - name: orderBy
+          in: query
+          schema:
+            type: string
+            enum:
+              - createdAt
+              - updatedAt
+          description: Campo para ordenação
+        - name: orderDirection
+          in: query
+          schema:
+            type: string
+            enum:
+              - asc
+              - desc
+          description: Direção da ordenação
+      responses:
+        "200":
+          description: Lista paginada de projetos criados pelo usuário
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaginatedProjectsResponse"
+              example:
+                count: 2
+                pagination:
+                  offset: 0
+                  limit: 10
+                projects:
+                  - id: "proj-uuid-1"
+                    projectName: "Projeto A"
+                    description: "Descrição A"
+                    status: "active"
+                    createdAt: "2025-09-01T10:00:00Z"
+                    updatedAt: "2025-09-02T10:00:00Z"
+                    creator:
+                      id: "creator-uuid-1111"
+                      fullName: "Carlos Alberto"
+                      email: "carlos@exemplo.com"
+                      organization: "Universidade X"
+                    projectTeam:
+                      - memberId: "member-uuid-2222"
+                        fullName: "Maria Souza"
+                        email: "maria@exemplo.com"
+                        roleInProject: "Desenvolvedora"
+                  - id: "proj-uuid-2"
+                    projectName: "Projeto B"
+                    description: "Descrição B"
+                    status: "inactive"
+                    createdAt: "2025-08-01T10:00:00Z"
+                    updatedAt: "2025-08-02T10:00:00Z"
+                    creator:
+                      id: "creator-uuid-1111"
+                      fullName: "Carlos Alberto"
+                      email: "carlos@exemplo.com"
+                      organization: "Universidade X"
+                    projectTeam: []
+        "404":
+          description: Nenhum projeto criado pelo usuário
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+              example:
+                message: "No user-created projects yet"
+        "401":
+          description: Token ausente ou inválido
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UnauthorizedResponse"
+        "500":
+          description: Erro interno do servidor
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+
+  /projects-details:
+    get:
+      tags:
+        - Projects
+      summary: Retornar detalhes dos projetos dos quais o usuário é membro
+      description: >
+        Retorna os projetos em que o usuário (a partir de `request.userEmail`) é membro.
+        Cada projeto contém contagens de brainstormings, user stories e a lista de brainstormings (sem userStories completos, apenas contagem).
+        Query params: offset, limit, id, status, projectName, orderBy (createdAt|updatedAt), orderDirection (asc|desc).
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            default: 0
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 10
+        - name: id
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: status
+          in: query
+          schema:
+            type: string
+        - name: projectName
+          in: query
+          schema:
+            type: string
+        - name: orderBy
+          in: query
+          schema:
+            type: string
+            enum:
+              - createdAt
+              - updatedAt
+        - name: orderDirection
+          in: query
+          schema:
+            type: string
+            enum:
+              - asc
+              - desc
+      responses:
+        "200":
+          description: Lista com detalhes dos projetos (paginada)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProjectsDetailsResponse"
+              example:
+                projects:
+                  - id: "proj-uuid-1"
+                    projectName: "Projeto A"
+                    description: "Descrição A"
+                    status: "active"
+                    createdAt: "2025-09-01T10:00:00Z"
+                    updatedAt: "2025-09-02T10:00:00Z"
+                    creator:
+                      id: "creator-uuid-1111"
+                      fullName: "Carlos Alberto"
+                      email: "carlos@exemplo.com"
+                      organization: "Universidade X"
+                    projectTeam:
+                      - memberId: "member-uuid-2222"
+                        fullName: "Maria Souza"
+                        email: "maria@exemplo.com"
+                        roleInProject: "Desenvolvedora"
+                    brainstormingsCount: 2
+                    userStoriesCount: 5
+                    brainstormings:
+                      - id: "brain-uuid-1"
+                        title: "Sessão 1"
+                        createdAt: "2025-09-03T10:00:00Z"
+                        userStoriesCount: 3
+                      - id: "brain-uuid-2"
+                        title: "Sessão 2"
+                        createdAt: "2025-09-05T10:00:00Z"
+                        userStoriesCount: 2
+                pagination:
+                  offset: 0
+                  limit: 10
+                  total: 1
+        "401":
+          description: Token ausente ou inválido
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UnauthorizedResponse"
+        "500":
+          description: Erro interno do servidor
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+
+  /userstories/register:
+    post:
+      tags:
+        - UserStories
+      summary: Criar user story (single) ou várias user stories (bulk)
+      description: >
+        Este endpoint aceita **criação única** ou **bulk**:
+        - Para criar uma única user story, envie o corpo conforme `UserStoryCreate`.
+        - Para criar várias user stories de uma vez, envie um objeto com `projectId` e `userStories` (array) conforme `BulkUserStoriesRequest`.
+        (No código do router existem duas handlers apontando para a mesma rota — aqui unificamos o comportamento suportando ambos os formatos.)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              oneOf:
+                - $ref: "#/components/schemas/UserStoryCreate"
+                - $ref: "#/components/schemas/BulkUserStoriesRequest"
+            examples:
+              single:
+                summary: Criar uma única user story
+                value:
+                  userStorieNumber: 1
+                  userStoriesTitle: "Como usuário, quero autenticar"
+                  card: "Cartão: Login"
+                  conversation: "Detalhes da conversa"
+                  confirmation: "Aceitação: login com e-mail e senha"
+                  projectId: "proj-123e4567-e89b-12d3-a456-426614174000"
+              bulk:
+                summary: Criar várias user stories
+                value:
+                  projectId: "proj-123e4567-e89b-12d3-a456-426614174000"
+                  userStories:
+                    - userStorieNumber: 1
+                      userStoriesTitle: "Como usuário, quero autenticar"
+                      card: "Cartão: Login"
+                    - userStorieNumber: 2
+                      userStoriesTitle: "Como usuário, quero recuperar senha"
+      responses:
+        "201":
+          description: User story(s) criado(s) com sucesso
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: "#/components/schemas/UserStory" # single create returns a user story
+                  - type: array
+                    items:
+                      $ref: "#/components/schemas/UserStory" # bulk create returns an array
+              examples:
+                created_single:
+                  value:
+                    id: "us-123e4567-e89b-12d3-a456-426614174000"
+                    userStorieNumber: 1
+                    userStoriesTitle: "Como usuário, quero autenticar"
+                    card: "Cartão: Login"
+                    conversation: "Detalhes"
+                    confirmation: "Critérios"
+                    status: "open"
+                    creatorId: "creator-uuid-1111"
+                    projectId: "proj-123e4567-e89b-12d3-a456-426614174000"
+                    createdAt: "2025-10-01T10:00:00Z"
+                created_bulk:
+                  value:
+                    - id: "us-aaa111"
+                      userStorieNumber: 1
+                      userStoriesTitle: "Story 1"
+                      projectId: "proj-123"
+                      creatorId: "creator-uuid-1111"
+                    - id: "us-bbb222"
+                      userStorieNumber: 2
+                      userStoriesTitle: "Story 2"
+                      projectId: "proj-123"
+                      creatorId: "creator-uuid-1111"
+        "400":
+          description: Requisição inválida (campos obrigatórios ausentes, validação ou erro custom lançado)
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: "#/components/schemas/MessageResponse"
+                  - $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                missing_projectId:
+                  value:
+                    message: "The 'projectId' field is required and must reference an existing project."
+                validation_error:
+                  value:
+                    message: "Validation error"
+                    errors:
+                      - "userStoriesTitle cannot be empty"
+                custom_map_error:
+                  value:
+                    message: "All stories must have 'userStorieNumber' and 'userStoriesTitle'."
+        "404":
+          description: Projeto não encontrado (apenas aplicável no fluxo bulk / create)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+              example:
+                message: "No project found with id 'proj-123'."
+        "401":
+          description: Token ausente ou inválido
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UnauthorizedResponse"
+        "500":
+          description: Erro interno do servidor
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+              example:
+                message: "Internal server error"
+
+  /userstories/{projectId}/user-stories:
+    get:
+      tags:
+        - UserStories
+      summary: Listar user stories de um projeto (paginado)
+      description: >
+        Retorna as user stories do projeto identificado por `projectId`.
+        Requer que o usuário seja membro do projeto (`ProjectUser`) ou seja o criador do projeto.
+        Query params suportados: `page` (padrão 1), `pageSize` (padrão 10), `sort` (asc|desc, padrão asc).
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          description: UUID do projeto
+          schema:
+            type: string
+            format: uuid
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 1
+          description: Número da página
+        - name: pageSize
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 10
+          description: Tamanho da página
+        - name: sort
+          in: query
+          required: false
+          schema:
+            type: string
+            enum:
+              - asc
+              - desc
+            default: asc
+          description: Ordenação por `userStorieNumber`
+      responses:
+        "200":
+          description: Lista paginada de user stories (apenas campos resumidos)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaginatedUserStoriesResponse"
+              example:
+                projectId: "proj-123e4567-e89b-12d3-a456-426614174000"
+                sort: "asc"
+                userStories:
+                  - id: "us-123"
+                    userStorieNumber: 1
+                    userStoriesTitle: "Story 1"
+                    status: "open"
+                    createdAt: "2025-10-01T10:00:00Z"
+                  - id: "us-456"
+                    userStorieNumber: 2
+                    userStoriesTitle: "Story 2"
+                    status: "open"
+                    createdAt: "2025-10-02T10:00:00Z"
+                pagination:
+                  page: 1
+                  pageSize: 10
+                  totalPages: 1
+                  totalItems: 2
+        "400":
+          description: Parâmetro `sort` inválido ou outro erro de validação
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+              example:
+                message: "Invalid sort parameter; must be 'asc' or 'desc'."
+        "403":
+          description: Usuário não tem permissão para ver as user stories (não é membro nem criador)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+              example:
+                message: "You do not have permission to view those user stories."
+        "404":
+          description: Projeto não encontrado ou não há user stories para o projeto
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+              examples:
+                project_not_found:
+                  value:
+                    message: "Project with id 'proj-123' not found."
+                no_stories:
+                  value:
+                    message: "No user stories found for this project."
+        "401":
+          description: Token ausente ou inválido
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UnauthorizedResponse"
+        "500":
+          description: Erro interno do servidor
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+              example:
+                message: "Internal server error"
+
+  /brainstorming/create:
+    post:
+      tags:
+        - Brainstorming
+      summary: Criar uma sessão de brainstorming e associar user stories
+      description: |
+        Cria um registro de brainstorming associado ao projeto (verifica se o projeto pertence ao usuário).
+        Verifica também se todas as user stories passadas existem, pertencem ao mesmo projeto e ao mesmo criador.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BrainstormingCreateRequest"
+            examples:
+              valid:
+                value:
+                  brainstormingTitle: "Sessão 1 - Critérios de Login"
+                  project: "proj-123e4567-e89b-12d3-a456-426614174000"
+                  brainstormingDate: "2025-10-01"
+                  brainstormingTime: "14:00"
+                  userStories:
+                    - "us-123e4567-e89b-12d3-a456-426614174000"
+                    - "us-987e6543-e21b-12d3-a456-426614174999"
+      responses:
+        "201":
+          description: Brainstorming criado com sucesso (retorna o objeto completo com userStories associadas)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Brainstorming"
+              example:
+                id: "br-123e4567-e89b-12d3-a456-426614174000"
+                brainstormingTitle: "Sessão 1 - Critérios de Login"
+                projectId: "proj-123e4567-e89b-12d3-a456-426614174000"
+                creatorId: "creator-uuid-1111"
+                brainstormingDate: "2025-10-01"
+                brainstormingTime: "14:00"
+                createdAt: "2025-10-01T14:00:00Z"
+                updatedAt: "2025-10-01T14:00:00Z"
+                userStories:
+                  - id: "us-123e4567-e89b-12d3-a456-426614174000"
+                    userStorieNumber: 1
+                    userStoriesTitle: "Como usuário, quero autenticar"
+                    status: "open"
+                    createdAt: "2025-09-30T10:00:00Z"
+        "400":
+          description: Requisição inválida (projeto não existe/pertence ao usuário, userStories vazio, user stories inválidas, validação)
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: "#/components/schemas/MessageResponse"
+                  - $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                project_not_found:
+                  value:
+                    message: "The selected project does not exist or does not belong to the user."
+                missing_userStories:
+                  value:
+                    message: "The 'userStories' array must contain at least one valid UUID."
+                invalid_userstories:
+                  value:
+                    message: "One or more User Stories do not exist or are not associated with the project."
+        "401":
+          description: Token ausente ou inválido
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UnauthorizedResponse"
+        "500":
+          description: Erro interno do servidor ou erro de transação
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+
+  /brainstorming/countAllBrainstormings:
+    get:
+      tags:
+        - Brainstorming
+      summary: Retornar todas as brainstormings do usuário e contagem
+      description: |
+        Retorna `findAndCountAll` de brainstormings cujo `creatorId` é o usuário autenticado,
+        incluindo as user stories relacionadas. Ordena por `createdAt` DESC.
+        Retorna 404 se não houver brainstormings criadas pelo usuário.
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Retorna objeto com `count` e `rows` (lista de brainstormings com userStories incluídas)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BrainstormingsFindAndCount"
+              example:
+                count: 1
+                rows:
+                  - id: "br-123e4567-e89b-12d3-a456-426614174000"
+                    brainstormingTitle: "Sessão 1 - Critérios de Login"
+                    projectId: "proj-123e4567-e89b-12d3-a456-426614174000"
+                    creatorId: "creator-uuid-1111"
+                    brainstormingDate: "2025-10-01"
+                    brainstormingTime: "14:00"
+                    createdAt: "2025-10-01T14:00:00Z"
+                    updatedAt: "2025-10-01T14:00:00Z"
+                    userStories:
+                      - id: "us-123e4567-e89b-12d3-a456-426614174000"
+                        userStorieNumber: 1
+                        userStoriesTitle: "Como usuário, quero autenticar"
+                        status: "open"
+                        createdAt: "2025-09-30T10:00:00Z"
+        "404":
+          description: Nenhuma brainstorming criada pelo usuário
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+              example:
+                message: "No brainstormings created by this user yet"
+        "401":
+          description: Token ausente ou inválido
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UnauthorizedResponse"
+        "500":
+          description: Erro interno do servidor
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"

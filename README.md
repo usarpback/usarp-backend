@@ -105,3 +105,21 @@ Parar os containers:
 ```bash
 docker-compose down
 ```
+
+# 📖 Documentação da API
+
+A API é documentada com Swagger (OpenAPI 3.0) para facilitar a exploração dos endpoints.
+
+Após iniciar o servidor (localmente ou via Docker), acesse no navegador:
+
+```bash
+http://localhost:3333/docs
+```
+
+📚 O que você encontra na documentação:
+
+- Endpoints de autenticação (signup, login, recuperação de senha).
+- Gerenciamento de usuários (perfil, atualização, exclusão de conta).
+- Projetos (criação, listagem, detalhes).
+- User Stories (registro individual e em lote, listagem com paginação).
+- Sessões de Brainstorming (criação e listagem/contagem).
