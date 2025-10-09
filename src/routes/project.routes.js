@@ -8,5 +8,6 @@ ProjectRoutes.get(
   ProjectController.getAllUserCreatedProjectsAndCounts,
 );
 ProjectRoutes.get("/projects-details", ProjectController.getProjectsDetails);
+ProjectRoutes.put("/project/:id", ProjectController.updateProject);
 
 module.exports = ProjectRoutes;

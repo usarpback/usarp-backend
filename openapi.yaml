@@ -1531,6 +1531,85 @@ paths:
               schema:
                 $ref: "#/components/schemas/MessageResponse"
 
+  /project/{id}:
+    put:
+      tags:
+        - Projects
+      summary: Atualizar projeto existente
+      description: >
+        Atualiza nome, descrição e status do projeto. Apenas o criador pode editar.
+        Se o nome do projeto for alterado, o sistema deve notificar os membros.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: UUID do projeto a ser atualizado
+          schema:
+            type: string
+            format: uuid
+            example: "a1b2c3d4-1111-2222-3333-abcdef123456"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                projectName:
+                  type: string
+                  example: "Novo Nome do Projeto"
+                description:
+                  type: string
+                  example: "Nova descrição do projeto"
+                status:
+                  type: string
+                  example: "active"
+              required:
+                - projectName
+                - description
+                - status
+      responses:
+        "200":
+          description: Projeto atualizado com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+              example:
+                message: "Projeto atualizado com sucesso"
+        "401":
+          description: Token ausente ou inválido
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UnauthorizedResponse"
+        "403":
+          description: Usuário não é o criador do projeto
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+              example:
+                message: "Somente o criador do projeto pode atualizar o projeto"
+        "404":
+          description: Projeto não encontrado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+              example:
+                message: "Projeto não encontrado"
+        "500":
+          description: Erro interno do servidor
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+              example:
+                message: "Internal server error"
+
   /userstories/register:
     post:
       tags:
