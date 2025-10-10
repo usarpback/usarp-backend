@@ -15,17 +15,16 @@ services:
       CORS_ORIGIN: ${CORS_ORIGIN}
     networks:
       - docker-network
-
+      
   db:
     image: postgres:15
-    container_name: postgres-db
-    restart: always
     environment:
       POSTGRES_USER: ${DB_USERNAME}
       POSTGRES_PASSWORD: ${DB_PASSWORD}
       POSTGRES_DB: ${DB_NAME}
     ports:
-      - "${LOCAL_DB_PORT}:5432" # host:container (container sempre 5432)
+      - "${LOCAL_DB_PORT}:5432"
+
     volumes:
       - postgres-data:/var/lib/postgresql/data
     healthcheck:

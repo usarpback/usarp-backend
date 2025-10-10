@@ -9,6 +9,8 @@ const {
 } = require("../database");
 const { ValidationError } = require("sequelize");
 const { Op } = require("sequelize");
+const mailer = require("../config/mailer");
+const { errorMonitor } = require("nodemailer/lib/xoauth2");
 
 module.exports = {
   async createProject(request, response) {
@@ -380,4 +382,72 @@ module.exports = {
       return response.status(500).json({ message: "Internal server error" });
     }
   },
+
+  async deleteProject(request, response) {
+    const { id: projectId } = request.params;
+    const userId = request.userId;
+
+    const t = await sequelize.transaction({
+      isolationLevel: sequelize.Transaction.ISOLATION_LEVELS.SERIALIZABLE,
+    });
+
+    try {
+      //Busca projeto
+      const project = await Project.findByPk(projectId);
+      if (!project) {
+        await t.rollback();
+        return response.status(404).json({ message: "Projeto não encontrado"});
+      }
+      // Verifica se é o criador do projeto
+      if (project.creatorId !== userId) {
+        await t.rollback();
+        return response.status(403).json({ message: "Apenas o criador pode excluir o projeto"});
+      }
+
+      // Verifica existencia de brainstormings associadas
+      const brainstormings = await Brainstorming.findAll({Where: {ProjectId}, transaction: t});
+
+      if (brainstormings.length > 0) {
+        await t.rollback();
+        return response.status(400).json({ message: "Não é possivel remover projeto, pois há brainstorms associadas. Remova primeiro as brainstorms.", hasBrainstormings : true,
+        })
+      }
+
+      //Busca membros do projeto
+      const projectUsers = await projectUser.findAll({
+        where: { projectId },
+        attributes: ["memberEmail", "fullName"],
+        transaction: t
+      });
+
+      //Exclusão em cascata
+      await UserStories.destroy({ where: { projectId }, transaction: t});
+      await ProjectUser.destroy({ where: { projectId }, transaction: t});
+      await Project.destroy({ where: { projectId }, transaction: t});
+
+      //Notificar membros do projeto 
+      for (const member of projectUsers) {
+        try {
+          await mailer.sendMail({
+            to: member.memberEmail,
+            from: "mailusarp@gmail.com",
+            template: "project_deleted",
+            subject: "Project deleted - USARP TOOL",
+            context: {
+              memberName: member.fullName,
+              projectName: project.projectName
+            }
+          })
+        } catch (emailError) {
+          console.error(`Error to invite mail for ${member.memberEmail}:`, emailError.message);
+        }
+      }
+      await t.commit();
+      return response.status(200).json({ message: "Projeto excluido com sucesso."});
+    } catch (error) {
+      if (!t.finished) await t.rollback();
+      return response.status(500).json({ message: error.message});
+    }
+  }
+
 };
