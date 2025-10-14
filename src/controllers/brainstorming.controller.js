@@ -111,4 +111,103 @@ module.exports = {
       return response.status(500).json({ message: "Internal server error" });
     }
   },
+
+  async getAllUserBrainstormingsList(request, response) {
+    const { page = 1, limit = 20 } = request.query;
+    const offset = (page - 1) * limit;
+
+    const pageAsInt = parseInt(page, 10);
+    const limitAsInt = parseInt(limit, 10);
+
+    try{
+
+      if (isNaN(pageAsInt) || isNaN(limitAsInt) || pageAsInt <= 0 || limitAsInt <= 0) {
+        return response.status(400).json({ message: "Parâmetros de paginação inválidos." });
+      }
+
+      const { count, rows } = await Brainstorming.findAndCountAll({
+        where: {
+          creatorId: request.userId,
+        },
+
+        attributes: ['id', 'brainstormingTitle', 'createdAt', 'brainstormingTime'],
+        
+        order: [['createdAt', 'DESC']],
+        limit: limitAsInt,
+        offset: offset, 
+      });
+
+      if (count === 0) {
+        return response.status(404).json({
+          message: "Brainstorming not found or does not belong to the user.",
+        });
+      }
+      
+      const totalPages = Math.ceil(count / limitAsInt);
+
+      return response.status(200).json({
+        totalItems: count,
+        totalPages: totalPages,
+        currentPage: pageAsInt,
+        brainstormings: rows,
+      });
+
+    } catch (error) {
+      return response.status(500).json({ message: "Internal server error" });
+    }
+  },
+
+  async getAllUserBrainstormingsGrid(request, response) {
+    const { page = 1, limit = 20 } = request.query;
+    const offset = (page - 1) * limit;
+
+    const pageAsInt = parseInt(page, 10);
+    const limitAsInt = parseInt(limit, 10);
+
+    try {
+
+      if (isNaN(pageAsInt) || isNaN(limitAsInt) || pageAsInt <= 0 || limitAsInt <= 0) {
+        return response.status(400).json({ message: "Parâmetros de paginação inválidos." });
+      }
+
+      const { count, rows } = await Brainstorming.findAndCountAll({
+        where: {
+          creatorId: request.userId,
+        },
+
+        include: [
+          {
+            model: UserStories,
+            as: "userStories",
+            through: { attributes: [] },
+          },
+          {
+            model: Project,
+            as: "project",
+            attributes: ['id', 'projectName'],
+          }
+        ],
+        order: [['createdAt', 'DESC']],
+        limit: limitAsInt,
+        offset: offset, 
+      });
+
+      if (count === 0) {
+        return response.status(404).json({
+          message: "Brainstorming not found or does not belong to the user.",
+        });
+      }
+
+      const totalPages = Math.ceil(count / limitAsInt);
+
+      return response.status(200).json({
+        totalItems: count,
+        totalPages: totalPages,
+        currentPage: pageAsInt,
+        brainstormings: rows,
+      });
+    } catch (error) {
+      return response.status(500).json({ message: "Internal server error" });
+    }
+  }
 };
