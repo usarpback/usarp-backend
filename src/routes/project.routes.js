@@ -9,5 +9,6 @@ ProjectRoutes.get(
 );
 ProjectRoutes.get("/projects-details", ProjectController.getProjectsDetails);
 ProjectRoutes.delete("/project/:id", ProjectController.deleteProject);
+ProjectRoutes.put("/project/:id", ProjectController.updateProject);
 
 module.exports = ProjectRoutes;

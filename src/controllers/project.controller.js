@@ -450,4 +450,68 @@ module.exports = {
     }
   }
 
+  async updateProject(request, response) {
+    try {
+      const projectId = request.params.id;
+      const project = await Project.findByPk(projectId);
+      const { projectName, description, status } = request.body;
+
+      if (!project) {
+        return response.status(404).json({ message: "Projeto não encontrado" });
+      }
+
+      if (project.creatorId !== request.userId) {
+        return response
+          .status(403)
+          .json({ message: "Somente o criador do projeto pode atualizar o projeto" });
+      }
+
+      const [updated] = await Project.update(
+        { projectName, description, status },
+        { where: { id: projectId } }
+      );
+
+      if (projectName && projectName !== project.projectName) {
+        const projectMembers = await ProjectUser.findAll({
+          where: { projectId },
+          attributes: ["memberEmail", "fullName"]
+        });
+
+        const creator = await User.findOne({
+          where: { id: request.userId },
+          attributes: ["fullName"]
+        });
+
+        for (const member of projectMembers) {
+          try {
+            await mailer.sendMail({
+              to: member.memberEmail,
+              from: "mailusarp@gmail.com",
+              template: "project_name_change",
+              subject: "Projeto Atualizado - USARP Tool",
+              context: {
+                memberName: member.fullName,
+                oldProjectName: project.projectName,
+                newProjectName: projectName,
+                projectDescription: description || project.description,
+                projectStatus: status || project.status,
+                creatorName: creator.fullName
+              }
+            });
+          } catch (emailError) {
+            console.error(`Erro ao enviar email para ${member.memberEmail}:`, emailError.message);
+          }
+        }
+      }
+
+      if (!updated) {
+        return response.status(404).json({ message: "Projeto não encontrado" });
+      }
+
+      return response.status(200).json({ message: "Projeto atualizado com sucesso" });
+    } catch (error) {
+      console.error(error);
+      return response.status(500).json({ message: error.message });
+    }
+  }
 };

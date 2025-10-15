@@ -1599,6 +1599,84 @@ paths:
                     type: string
                     example: Erro interno do servidor.
                     
+    put:
+      tags:
+        - Projects
+      summary: Atualizar projeto existente
+      description: >
+        Atualiza nome, descrição e status do projeto. Apenas o criador pode editar.
+        Se o nome do projeto for alterado, o sistema deve notificar os membros.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: UUID do projeto a ser atualizado
+          schema:
+            type: string
+            format: uuid
+            example: "a1b2c3d4-1111-2222-3333-abcdef123456"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                projectName:
+                  type: string
+                  example: "Novo Nome do Projeto"
+                description:
+                  type: string
+                  example: "Nova descrição do projeto"
+                status:
+                  type: string
+                  example: "active"
+              required:
+                - projectName
+                - description
+                - status
+      responses:
+        "200":
+          description: Projeto atualizado com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+              example:
+                message: "Projeto atualizado com sucesso"
+        "401":
+          description: Token ausente ou inválido
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UnauthorizedResponse"
+        "403":
+          description: Usuário não é o criador do projeto
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+              example:
+                message: "Somente o criador do projeto pode atualizar o projeto"
+        "404":
+          description: Projeto não encontrado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+              example:
+                message: "Projeto não encontrado"
+        "500":
+          description: Erro interno do servidor
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+              example:
+                message: "Internal server error"
+
   /userstories/register:
     post:
       tags:
@@ -1953,6 +2031,179 @@ paths:
                 $ref: "#/components/schemas/MessageResponse"
               example:
                 message: "No brainstormings created by this user yet"
+        "401":
+          description: Token ausente ou inválido
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UnauthorizedResponse"
+        "500":
+          description: Erro interno do servidor
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+
+  /brainstorming/getAllUserBrainstormingsList/{id}:
+    get:
+      tags:
+        - Brainstorming
+      summary: Listar brainstormings do usuário (formato lista)
+      description: |
+        Lista paginada de brainstormings pertencentes ao usuário autenticado.
+        O parâmetro de caminho `{id}` é mantido para compatibilidade de rota, mas a API usa o `userId` do token.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: UUID do usuário (não utilizado; mantido por compatibilidade de rota)
+          schema:
+            type: string
+            format: uuid
+        - name: page
+          in: query
+          required: false
+          description: Número da página
+          schema:
+            type: integer
+            default: 1
+            minimum: 1
+        - name: limit
+          in: query
+          required: false
+          description: Itens por página
+          schema:
+            type: integer
+            default: 20
+            minimum: 1
+      responses:
+        "200":
+          description: Lista paginada de brainstormings do usuário
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  totalItems:
+                    type: integer
+                  totalPages:
+                    type: integer
+                  currentPage:
+                    type: integer
+                  brainstormings:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          format: uuid
+                        brainstormingTitle:
+                          type: string
+                        createdAt:
+                          type: string
+                          format: date-time
+                        brainstormingTime:
+                          type: string
+        "400":
+          description: Parâmetros de paginação inválidos
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+              example:
+                message: "Parâmetros de paginação inválidos."
+        "404":
+          description: Nenhuma brainstorming encontrada para o usuário
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+              example:
+                message: "Brainstorming not found or does not belong to the user."
+        "401":
+          description: Token ausente ou inválido
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UnauthorizedResponse"
+        "500":
+          description: Erro interno do servidor
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+
+  /brainstorming/getAllUserBrainstormingsGrid/{id}:
+    get:
+      tags:
+        - Brainstorming
+      summary: Listar brainstormings do usuário (formato grade, com relações)
+      description: |
+        Lista paginada de brainstormings do usuário, incluindo `project` e `userStories`.
+        O parâmetro de caminho `{id}` é mantido para compatibilidade de rota, mas a API usa o `userId` do token.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: UUID do usuário (não utilizado; mantido por compatibilidade de rota)
+          schema:
+            type: string
+            format: uuid
+        - name: page
+          in: query
+          required: false
+          description: Número da página
+          schema:
+            type: integer
+            default: 1
+            minimum: 1
+        - name: limit
+          in: query
+          required: false
+          description: Itens por página
+          schema:
+            type: integer
+            default: 20
+            minimum: 1
+      responses:
+        "200":
+          description: Lista paginada de brainstormings com relações
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  totalItems:
+                    type: integer
+                  totalPages:
+                    type: integer
+                  currentPage:
+                    type: integer
+                  brainstormings:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Brainstorming"
+        "400":
+          description: Parâmetros de paginação inválidos
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+              example:
+                message: "Parâmetros de paginação inválidos."
+        "404":
+          description: Nenhuma brainstorming encontrada para o usuário
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+              example:
+                message: "Brainstorming not found or does not belong to the user."
         "401":
           description: Token ausente ou inválido
           content:
