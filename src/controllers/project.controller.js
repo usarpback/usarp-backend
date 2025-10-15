@@ -448,7 +448,7 @@ module.exports = {
       if (!t.finished) await t.rollback();
       return response.status(500).json({ message: error.message});
     }
-  }
+  },
 
   async updateProject(request, response) {
     try {
