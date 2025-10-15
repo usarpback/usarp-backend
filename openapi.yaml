@@ -1536,7 +1536,7 @@ paths:
       summary: Excluir um projeto
       description: Exclui um projeto pelo ID. Apenas o criador pode excluir.
       tags:
-        - Project
+        - Projects
       parameters:
         - name: id
           in: path
