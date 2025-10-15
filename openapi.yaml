@@ -1532,6 +1532,73 @@ paths:
                 $ref: "#/components/schemas/MessageResponse"
 
   /project/{id}:
+    delete:
+      summary: Excluir um projeto
+      description: Exclui um projeto pelo ID. Apenas o criador pode excluir.
+      tags:
+        - Project
+      parameters:
+        - name: id
+          in: path
+          description: ID do projeto a ser excluído
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Projeto excluído com sucesso e membros notificados.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Projeto excluído com sucesso e membros notificados.
+        '400':
+          description: Não é possível excluir por haver brainstormings vinculadas.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Não é possível excluir o projeto porque há brainstormings associados.
+                  hasBrainstormings:
+                    type: boolean
+                    example: true
+        '403':
+          description: Usuário não é o criador do projeto.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Apenas o criador pode excluir o projeto.
+        '404':
+          description: Projeto não encontrado.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Projeto não encontrado.
+        '500':
+          description: Erro interno do servidor.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Erro interno do servidor.
+                    
     put:
       tags:
         - Projects
