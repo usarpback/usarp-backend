@@ -1842,6 +1842,111 @@ paths:
               example:
                 message: "Internal server error"
 
+  /userstories/{id}:
+    put:
+      tags:
+        - UserStories
+      summary: Atualizar uma história de usuário (reabrir antes se concluída)
+      description: >
+        Atualiza uma história de usuário pelo ID.
+        - Apenas membros do projeto com papel **'Moderador'** podem atualizar.
+        - Se a história de usuário estiver com status **'Concluída'**, ela deve ser **reaberta primeiro** alterando o status para **'Ativo'**.
+        - Todos os campos obedecem às Regras de Negócio 16.1 a 16.6.
+        - O sistema notificará os membros do projeto sobre as alterações (RN 18.2).
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: UUID of the user story to update
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                userStorieNumber:
+                  type: integer
+                  description: "Número sequencial da história de usuário"
+                  example: 3
+                userStoriesTitle:
+                  type: string
+                  description: "Título da história de usuário"
+                  example: "Cadastrar autenticação no sistema"
+                card:
+                  type: string
+                  description: "Descrição estruturada seguindo o template 'Como [persona], quero [objetivo] para [benefício]'."
+                  example: "Como usuário, quero fazer login no sistema para acessar funcionalidades privadas."
+                conversation:
+                  type: string
+                  description: "Notas de colaboração, esclarecimentos e discussões sobre aceitação."
+                  example: "Backend deve validar credenciais via JWT e consultar o banco de dados para autenticação."
+                confirmation:
+                  type: string
+                  description: "Critérios de aceitação"
+                  example: "Dado um usuário válido, quando fizer login com credenciais corretas, então deve ser redirecionado para /dashboard."
+                status:
+                  type: string
+                  enum: ["Ativo", "Inativo"]
+                  description: "Status atual da história de usuário"
+                  example: "Ativo"
+            examples:
+              reopen_story:
+                summary: "Reabrir história concluída"
+                value:
+                  status: "Ativo"
+              full_update:
+                summary: "Atualização completa"
+                value:
+                  userStorieNumber: 4
+                  userStoriesTitle: "Alterar design da dashboard"
+                  card: "Como administrador, quero alterar o visual da dashboard para melhorar a usabilidade." 
+                  conversation: "A equipe de frontend (React) fará ajustes no CSS e componentes; backend não é afetado."
+                  confirmation: "Dado o novo layout aplicado, o sistema deve manter todas as funcionalidades existentes e exibir corretamente em mobile."
+                  status: "Ativo"
+      responses:
+        "200":
+          description: User story updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserStory"
+        "400":
+          description: Invalid request or trying to update inactive user story
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+        "401":
+          description: Token missing or invalid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UnauthorizedResponse"
+        "403":
+          description: User lacks permissions (not a project moderator)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+        "404":
+          description: User story not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+
   /brainstorming/create:
     post:
       tags:

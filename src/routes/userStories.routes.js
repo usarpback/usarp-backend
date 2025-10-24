@@ -14,5 +14,9 @@ userStoriesRoutes.get(
   "/userstories/:projectId/user-stories",
   userStoriesController.getUserStoriesByProject,
 );
+userStoriesRoutes.put(
+  "/userstories/:id",
+  userStoriesController.updateUserStories,
+);
 
 module.exports = userStoriesRoutes;
