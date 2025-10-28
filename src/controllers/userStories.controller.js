@@ -3,6 +3,7 @@ const ProjectUser = require("../models/projectUser.model");
 const Project = require("../models/project.model");
 const paginate = require("../helpers/paginate");
 const { ValidationError } = require("sequelize");
+const mailer = require("../config/mailer");
 
 module.exports = {
   async registerUserStories(request, response) {
@@ -182,6 +183,154 @@ module.exports = {
         userStories: data,
         pagination: meta,
       });
+    } catch (err) {
+      console.error(err);
+      return response.status(500).json({ message: "Internal server error" });
+    }
+  },
+
+  async putOpenUserStories(request, response) {
+    const { id } = request.params;
+
+    try {
+      const userId = request.userId;
+      const userStorie = await UserStories.findByPk(id);
+      if (!userStorie) {
+        return response
+          .status(404)
+          .json({ message: `User story with id '${id}' not found.` });
+      }
+
+      if(userStorie.confirmation === null || userStorie.confirmation === '') {
+        return response.status(400).json({ message: "Cannot open a user story without confirmation." });
+      }
+      
+
+      const project = await Project.findByPk(userStorie.projectId);
+      if (!project) {
+        return response.status(404).json({
+          message: `No project found with id '${userStorie.projectId}'.`,
+        });
+      }
+
+      const projectUser = await ProjectUser.findOne({
+        where: { projectId: userStorie.projectId, memberId: userId },
+      });
+      if (!projectUser && project.creatorId !== userId) {
+        return response.status(403).json({
+          message: "You do not have permission to open this user story.",
+        });
+      }
+
+      return response.status(200).json(userStorie);
+    } catch (err) {
+      console.error(err);
+      return response.status(500).json({ message: "Internal server error" });
+    }
+  },
+
+  async updateUserStories(request, response) {
+    const { id } = request.params;
+    const userId = request.userId;
+
+    try {
+      const userStorie = await UserStories.findByPk(id);
+      if (!userStorie) {
+        return response
+          .status(404)
+          .json({ message: `User story with id '${id}' not found.` });
+      }
+
+      const projectMembership = await ProjectUser.findOne({
+        where: { projectId: userStorie.projectId, memberId: userId },
+      });
+
+      if (!projectMembership || projectMembership.roleInProject !== "Moderador") {
+        return response.status(403).json({
+          message:
+            "You do not have permission to update this user story. Only project moderators can edit user stories.",
+        });
+      }
+
+      if (userStorie.status !== "Ativo") {
+        return response
+          .status(400)
+          .json({ message: "Cannot update an inactive user story." });
+      }
+      const project = await Project.findByPk(userStorie.projectId);
+      if (!project) {
+        return response.status(400).json({ message: "O projeto associado a esta história não existe." });
+      }
+
+      const {
+        userStorieNumber,
+        userStoriesTitle,
+        card,
+        conversation,
+        confirmation,
+        status,
+      } = request.body;
+
+      const updatedData = {
+        userStorieNumber: userStorieNumber ?? userStorie.userStorieNumber,
+        userStoriesTitle: userStoriesTitle ?? userStorie.userStoriesTitle,
+        card: card !== undefined ? card : userStorie.card,
+        conversation: conversation !== undefined ? conversation : userStorie.conversation,
+        confirmation: confirmation !== undefined ? confirmation : userStorie.confirmation,
+        status: status ?? userStorie.status,
+      };
+      if (!updatedData.userStorieNumber || !updatedData.userStoriesTitle) {
+        return response.status(400).json({
+          message: "The fields 'User Story Number' and 'User Story Title' are required."
+        });
+      }
+      try {
+        const updated = await userStorie.update(updatedData);
+
+        const projectMembers = await ProjectUser.findAll({
+          where: { projectId: userStorie.projectId },
+          attributes: ["memberEmail", "fullName"],
+        });
+
+        const updater = projectMembership.fullName || request.userEmail || "Um usuário";
+
+        for (const member of projectMembers) {
+          try {
+            await mailer.sendMail({
+              to: member.memberEmail,
+              from: "mailusarp@gmail.com",
+              template: "userstory_updated",
+              subject: "User Story Updated - USARP Tool",
+              context: {
+                memberName: member.fullName,
+                userStorieNumber: updated.userStorieNumber,
+                userStoriesTitle: updated.userStoriesTitle,
+                updatedBy: updater,
+              },
+            });
+          } catch (emailError) {
+            console.error(
+              `Erro ao enviar email para ${member.memberEmail}:`,
+              emailError && emailError.message ? emailError.message : emailError,
+            );
+          }
+        }
+
+        return response.status(200).json(updated);
+      } catch (error) {
+        if (error instanceof ValidationError) {
+          const validationErrors = error.errors.map((err) => err.message);
+          return response.status(400).json({
+            message: "Validation error",
+            errors: validationErrors,
+          });
+        }
+        if (error.message) {
+          return response.status(400).json({ message: error.message });
+        }
+        console.error(error);
+        return response.status(500).json({ message: "Internal server error" });
+      }
     } catch (err) {
       console.error(err);
       return response.status(500).json({ message: "Internal server error" });
