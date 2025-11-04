@@ -1531,6 +1531,104 @@ paths:
               schema:
                 $ref: "#/components/schemas/MessageResponse"
 
+  /projects:
+    get:
+      tags:
+      - Projects
+      summary: Lista projetos do usuário com paginação e filtros
+      description: |
+        Retorna uma lista paginada de projetos onde o usuário autenticado é criador ou membro.
+        Permite filtrar por status e nome parcial do projeto, e ordenar pelos campos createdAt ou updatedAt.
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: offset
+          schema:
+            type: integer
+            default: 0
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 10
+        - in: query
+          name: status
+          schema:
+            type: string
+        - in: query
+          name: projectName
+          schema:
+            type: string 
+        - in: query
+          name: orderBy
+          schema:
+            type: string
+            enum:
+              - createdAt
+              - updatedAt
+        - in: query
+          name: orderDirection
+          schema:
+            type: string
+            enum:
+              - ASC
+              - DESC
+            default: ASC
+      responses:
+        "200":
+          description: Lista paginada de projetos do usuário
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  projects:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        projectName:
+                          type: string
+                          example: "Projeto A"
+                        creatorName:
+                          type: string
+                          example: "Carlos Alberto"
+                        createdAt:
+                          type: string
+                          format: date-time
+                          example: "2025-09-01T10:00:00Z"
+                        canEdit:
+                          type: boolean
+                          example: true
+                        canDelete:
+                          type: boolean
+                          example: false
+                  pagination:
+                    type: object
+                    properties:
+                      offset:
+                        type: integer
+                        example: 0
+                      limit:
+                        type: integer
+                        example: 10
+                      total:
+                        type: integer
+                        example: 50
+        "401":
+          description: Token ausente ou inválido
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UnauthorizedResponse"
+        "500":
+          description: Erro interno do servidor
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+
   /project/{id}:
     delete:
       summary: Excluir um projeto
