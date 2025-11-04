@@ -307,6 +307,25 @@ components:
           type: string
           example: "Desenvolvedor"
 
+    AddProjectMemberRequest:
+      type: object
+      properties:
+        memberEmail:
+          type: string
+          format: email
+          example: "usuario@example.com"
+      required:
+        - memberEmail
+
+    UpdateProjectMemberRoleRequest:
+      type: object
+      properties:
+        roleInProject:
+          type: string
+          example: "Moderador"
+      required:
+        - roleInProject
+
     CreatorSummary:
       type: object
       properties:
@@ -1676,6 +1695,229 @@ paths:
                 $ref: "#/components/schemas/MessageResponse"
               example:
                 message: "Internal server error"
+
+  /project/{id}/addMember:
+    post:
+      tags:
+        - Projects
+      summary: Convidar / adicionar um membro ao projeto
+      description: Convida (ou adiciona) um usuário já cadastrado ao projeto. Somente o criador ou moderadores podem convidar.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID do projeto
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddProjectMemberRequest'
+      responses:
+        '201':
+          description: Membro adicionado com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+        '400':
+          description: Requisição inválida (ex. usuário já é membro)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Token ausente ou inválido
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedResponse'
+        '403':
+          description: Usuário não tem permissão para convidar
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+        '404':
+          description: Usuário ou projeto não encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+        '500':
+          description: Erro interno do servidor
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+
+  /project/{id}/removeMember/{memberId}:
+    delete:
+      tags:
+        - Projects
+      summary: Remover um membro do projeto
+      description: Remove um membro do projeto. Apenas o criador pode remover membros.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID do projeto
+          schema:
+            type: string
+            format: uuid
+        - name: memberId
+          in: path
+          required: true
+          description: Id do membro a ser removido
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Membro removido com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+        '404':
+          description: Membro ou projeto não encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+        '403':
+          description: Apenas o criador pode remover membros
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+        '401':
+          description: Token ausente ou inválido
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedResponse'
+        '500':
+          description: Erro interno do servidor
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+
+  /project/{id}/members:
+    get:
+      tags:
+        - Projects
+      summary: Listar membros do projeto
+      description: Retorna a lista de membros do projeto (fullName, email, roleInProject, organization, profile, memberId).
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID do projeto
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Lista de membros retornada com sucesso
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  members:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ProjectTeamMember'
+        '401':
+          description: Token ausente ou inválido
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedResponse'
+        '500':
+          description: Erro interno do servidor
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+
+  /project/{id}/members/{memberId}:
+    put:
+      tags:
+        - Projects
+      summary: Atualizar função de um membro do projeto
+      description: Atualiza o campo roleInProject de um membro. Apenas o criador pode alterar funções.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID do projeto
+          schema:
+            type: string
+            format: uuid
+        - name: memberId
+          in: path
+          required: true
+          description: ID do membro do projeto
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateProjectMemberRoleRequest'
+      responses:
+        '200':
+          description: Função atualizada com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+        '400':
+          description: Requisição inválida
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Token ausente ou inválido
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedResponse'
+        '403':
+          description: Apenas o criador pode alterar funções
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+        '404':
+          description: Membro ou projeto não encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+        '500':
+          description: Erro interno do servidor
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
 
   /userstories/register:
     post:
