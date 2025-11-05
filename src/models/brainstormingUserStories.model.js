@@ -58,6 +58,35 @@ class BrainstormingUserStories extends Model {
         modelName: "BrainstormingUserStories",
         tableName: "brainstorming_userstories",
         underscored: true,
+        hooks: {
+          beforeCreate: async (record, options) => {
+            const Brainstorming = sequelize.models.Brainstorming;
+            if (!Brainstorming) return;
+            const brainstorming = await Brainstorming.findByPk(record.brainstormingId);
+            if (!brainstorming) {
+              throw new Error("Brainstorming not found for association.");
+            }
+            if (["Bloqueado", "Concluído/Encerrado"].includes(brainstorming.status)) {
+              throw new Error("Não é possível associar histórias de usuário a um brainstorming com status 'Bloqueado' ou 'Concluído/Encerrado'.");
+            }
+          },
+          beforeBulkCreate: async (records, options) => {
+            const Brainstorming = sequelize.models.Brainstorming;
+            if (!Brainstorming) return;
+            const brainstormingIds = Array.from(new Set(records.map(r => r.brainstormingId)));
+            const brainstormings = await Brainstorming.findAll({ where: { id: brainstormingIds } });
+            const map = new Map(brainstormings.map(b => [b.id, b]));
+            for (const rec of records) {
+              const b = map.get(rec.brainstormingId);
+              if (!b) {
+                throw new Error(`Brainstorming with id '${rec.brainstormingId}' not found for association.`);
+              }
+              if (["Bloqueado", "Concluído/Encerrado"].includes(b.status)) {
+                throw new Error("Não é possível associar histórias de usuário a um brainstorming com status 'Bloqueado' ou 'Concluído/Encerrado'.");
+              }
+            }
+          }
+        },
       },
     );
   }

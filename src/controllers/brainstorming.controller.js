@@ -4,6 +4,7 @@ const UserStories = require("../models/userStories.model");
 const { ValidationError } = require("sequelize");
 
 module.exports = {
+
   async createBrainstorming(request, response) {
     const {
       brainstormingTitle,
@@ -329,4 +330,31 @@ module.exports = {
       return response.status(500).json({ message: 'Internal server error' });
     }
   },
+
+  async helpBrainstormingStatus(request, response) {
+    try {
+      const statuses = [
+        {
+          status: 'Novo',
+          description:
+            'Brainstorming recém-criado. Pode não possuir vínculo com projeto e/ou histórias de usuário e pode ser editado.',
+        },
+        {
+          status: 'Bloqueado',
+          description:
+            'Brainstorming com impedimentos ou dependências que precisam ser resolvidas antes de prosseguir.',
+        },
+        {
+          status: 'Concluído/Encerrado',
+          description:
+            'Brainstorming finalizado. A sessão foi encerrada e não deve ser alterada em fluxo normal.',
+        },
+      ];
+
+      return response.status(200).json({ statuses });
+    } catch (error) {
+      return response.status(500).json({ message: 'Internal server error' });
+    }
+  },
+
 };

@@ -32,4 +32,8 @@ BrainstormingRoutes.delete(
   BrainstormingController.deleteBrainstorming,
 );
 
+BrainstormingRoutes.get(
+  "/brainstorming/statusHelp",
+  BrainstormingController.helpBrainstormingStatus,
+);
 module.exports = BrainstormingRoutes;
