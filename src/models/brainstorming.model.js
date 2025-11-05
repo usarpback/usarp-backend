@@ -134,6 +134,14 @@ class Brainstorming extends Model {
               brainstorming.brainstormingTime,
             );
           },
+          beforeUpdate: async (brainstorming, options) => {
+            if (!brainstorming.changed || !brainstorming.changed("projectId")) return;
+            const existing = await sequelize.models.Brainstorming.findByPk(brainstorming.id);
+            if (!existing) return;
+            if (["Bloqueado", "Concluído/Encerrado"].includes(existing.status)) {
+              throw new Error("Não é possível associar um projeto a um brainstorming com status 'Bloqueado' ou 'Concluído/Encerrado'.");
+            }
+          },
         },
       },
     );

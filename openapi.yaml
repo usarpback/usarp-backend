@@ -775,6 +775,24 @@ components:
           items:
             $ref: "#/components/schemas/Brainstorming"
 
+    BrainstormingStatusHelpResponse:
+      type: object
+      properties:
+        statuses:
+          type: array
+          items:
+            type: object
+            properties:
+              status:
+                type: string
+                enum:
+                  - Novo
+                  - Bloqueado
+                  - Concluído/Encerrado
+              description:
+                type: string
+          description: Lista de status possíveis e suas descrições
+
   securitySchemes:
     bearerAuth:
       type: http
@@ -2650,6 +2668,29 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Erro interno do servidor
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /brainstorming/statusHelp:
+    get:
+      tags:
+        - Brainstorming
+      summary: Retornar explicação dos status de brainstorming
+      description: >
+        Retorna a lista de status possíveis para uma sessão de brainstorming e o significado de cada um.
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Lista de status retornada com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BrainstormingStatusHelpResponse"
         "500":
           description: Erro interno do servidor
           content:
