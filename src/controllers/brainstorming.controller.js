@@ -134,7 +134,7 @@ module.exports = {
         
         order: [['createdAt', 'DESC']],
         limit: limitAsInt,
-        offset: offset, 
+        offset,
       });
 
       if (count === 0) {
@@ -147,7 +147,7 @@ module.exports = {
 
       return response.status(200).json({
         totalItems: count,
-        totalPages: totalPages,
+        totalPages,
         currentPage: pageAsInt,
         brainstormings: rows,
       });
@@ -189,7 +189,7 @@ module.exports = {
         ],
         order: [['createdAt', 'DESC']],
         limit: limitAsInt,
-        offset: offset, 
+        offset,
       });
 
       if (count === 0) {
@@ -202,12 +202,131 @@ module.exports = {
 
       return response.status(200).json({
         totalItems: count,
-        totalPages: totalPages,
+        totalPages,
         currentPage: pageAsInt,
         brainstormings: rows,
       });
     } catch (error) {
       return response.status(500).json({ message: "Internal server error" });
     }
-  }
+  },
+
+  async deleteBrainstorming(request, response) {
+    const { brainstormingId } = request.params;
+    const creatorId = request.userId;
+
+    try {
+      const brainstorming = await Brainstorming.findOne({
+        where: { id: brainstormingId, creatorId },
+        include: [
+          {
+            model: UserStories,
+            as: "userStories",
+            attributes: ["id", "userStoriesTitle"],
+            through: { attributes: [] },
+          },
+          {
+            model: Project,
+            as: "project",
+            attributes: ["id", "projectName"],
+          },
+        ],
+      });
+
+      if (!brainstorming) {
+        return response.status(404).json({
+          message: "Brainstorming not found or does not belong to the user.",
+        });
+      }
+
+      const hasProject = Boolean(
+        brainstorming.projectId || (brainstorming.project && brainstorming.project.id),
+      );
+      const hasUserStories = Array.isArray(brainstorming.userStories) && brainstorming.userStories.length > 0;
+
+      if (hasProject || hasUserStories) {
+        const associations = {
+          project: null,
+          userStories: [],
+        };
+
+        if (hasProject) {
+          associations.project = brainstorming.project
+            ? { id: brainstorming.project.id, projectName: brainstorming.project.projectName }
+            : { id: brainstorming.projectId };
+        }
+
+        if (hasUserStories) {
+          associations.userStories = brainstorming.userStories.map((us) => ({
+            id: us.id,
+            title: us.userStoriesTitle,
+          }));
+        }
+
+        return response.status(400).json({
+          message:
+            "Não é possível excluir permanentemente este brainstorming porque ele possui associações com projeto e/ou histórias de usuário.",
+          associations,
+        });
+      }
+
+      await brainstorming.destroy();
+
+      return response.status(200).json({ message: "Brainstorming deleted successfully." });
+    } catch (error) {
+      return response.status(500).json({ message: "Internal server error" });
+    }
+  },
+
+  async updateBrainstormingStatus(request, response) {
+    const { brainstormingId } = request.params;
+    const { status } = request.body;
+    const creatorId = request.userId;
+
+    const allowedStatuses = ['Novo', 'Bloqueado', 'Concluído/Encerrado'];
+
+    try {
+      if (!allowedStatuses.includes(status)) {
+        return response.status(400).json({ message: 'Status inválido.' });
+      }
+
+      const brainstorming = await Brainstorming.findOne({
+        where: { id: brainstormingId, creatorId },
+        include: [
+          {
+            model: UserStories,
+            as: 'userStories',
+            through: { attributes: [] },
+          },
+          {
+            model: Project,
+            as: 'project',
+            attributes: ['id', 'projectName'],
+          },
+        ],
+      });
+
+      if (!brainstorming) {
+        return response.status(404).json({ message: 'Brainstorming not found or does not belong to the user.' });
+      }
+
+      const hasProject = Boolean(
+        brainstorming.projectId || (brainstorming.project && brainstorming.project.id),
+      );
+      const hasUserStories = Array.isArray(brainstorming.userStories) && brainstorming.userStories.length > 0;
+
+      if (!hasProject || !hasUserStories) {
+        return response.status(400).json({
+          message: 'Só é possível atribuir status a brainstormings que possuam vínculo com um projeto e histórias de usuário.',
+        });
+      }
+
+      brainstorming.status = status;
+      await brainstorming.save();
+
+      return response.status(200).json({ message: 'Status atualizado com sucesso.', brainstorming });
+    } catch (error) {
+      return response.status(500).json({ message: 'Internal server error' });
+    }
+  },
 };
