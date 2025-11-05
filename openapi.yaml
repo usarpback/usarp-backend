@@ -727,6 +727,51 @@ components:
           example: 2
         rows:
           type: array
+
+    BrainstormingAssociations:
+      type: object
+      properties:
+        project:
+          type: object
+          nullable: true
+          properties:
+            id:
+              type: string
+              format: uuid
+            projectName:
+              type: string
+          description: Projeto vinculado (se houver)
+        userStories:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+                format: uuid
+              title:
+                type: string
+          description: Lista de user stories vinculadas ao brainstorming
+
+    UpdateBrainstormingStatusRequest:
+      type: object
+      properties:
+        status:
+          type: string
+          enum:
+            - Novo
+            - Bloqueado
+            - Concluído/Encerrado
+      required:
+        - status
+
+    StatusUpdateResponse:
+      type: object
+      properties:
+        message:
+          type: string
+        brainstorming:
+          $ref: '#/components/schemas/Brainstorming'
           items:
             $ref: "#/components/schemas/Brainstorming"
 
@@ -2563,3 +2608,100 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/MessageResponse"
+
+  /brainstorming/{brainstormingId}:
+    delete:
+      tags:
+        - Brainstorming
+      summary: Deletar um brainstorming (permanente)
+      description: >
+        Exclui um brainstorming pelo ID. Apenas brainstormings que NÃO estejam vinculados a um projeto
+        e que NÃO possuam histórias de usuário podem ser excluídos permanentemente.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: brainstormingId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Brainstorming excluído com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+        "400":
+          description: Não é possível excluir por haver associações (projeto ou user stories)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  associations:
+                    $ref: "#/components/schemas/BrainstormingAssociations"
+        "404":
+          description: Brainstorming não encontrado ou não pertence ao usuário
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Erro interno do servidor
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /brainstorming/{brainstormingId}/status:
+    patch:
+      tags:
+        - Brainstorming
+      summary: Atualizar status do brainstorming
+      description: >
+        Atribui um status ('Novo', 'Bloqueado' ou 'Concluído/Encerrado') a um brainstorming. Só é permitido
+        quando o brainstorming estiver vinculado a um projeto e possuir pelo menos uma história de usuário.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: brainstormingId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateBrainstormingStatusRequest"
+      responses:
+        "200":
+          description: Status atualizado com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StatusUpdateResponse"
+        "400":
+          description: Requisição inválida ou operação não permitida
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Brainstorming não encontrado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Erro interno do servidor
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"

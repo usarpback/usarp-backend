@@ -111,6 +111,17 @@ class Brainstorming extends Model {
             },
           },
         },
+        status: {
+          type: DataTypes.ENUM('Novo', 'Bloqueado', 'Concluído/Encerrado'),
+          allowNull: true,
+          defaultValue: 'Novo',
+          validate: {
+            isIn: {
+              args: [['Novo', 'Bloqueado', 'Concluído/Encerrado']],
+              msg: "Status must be one of 'Novo', 'Bloqueado' or 'Concluído/Encerrado'.",
+            },
+          },
+        },
       },
       {
         sequelize,

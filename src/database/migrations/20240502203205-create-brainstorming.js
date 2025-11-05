@@ -36,6 +36,11 @@ module.exports = {
         type: Sequelize.STRING,
         allowNull: false,
       },
+      status: {
+        type: Sequelize.STRING,
+        allowNull: false,
+        defaultValue: "Novo",
+      },
       created_at: Sequelize.DATE,
       updated_at: Sequelize.DATE,
     });

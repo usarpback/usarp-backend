@@ -22,4 +22,14 @@ BrainstormingRoutes.get(
   BrainstormingController.getAllUserBrainstormingsList,
 );
 
+BrainstormingRoutes.patch(
+  "/brainstorming/:brainstormingId/status",
+  BrainstormingController.updateBrainstormingStatus,
+);
+
+BrainstormingRoutes.delete(
+  "/brainstorming/:brainstormingId",
+  BrainstormingController.deleteBrainstorming,
+);
+
 module.exports = BrainstormingRoutes;
