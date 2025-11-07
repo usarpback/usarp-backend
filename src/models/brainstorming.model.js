@@ -16,6 +16,13 @@ class Brainstorming extends Model {
       targetKey: "id",
       onDelete: "CASCADE",
     });
+
+    this.belongsToMany(models.User, {
+      through: 'BrainstormingUserRole',
+      foreignKey: 'brainstormingId',
+      otherKey: 'userId',
+      as: 'users',
+    });
   }
 
   static init(sequelize) {

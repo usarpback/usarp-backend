@@ -1,6 +1,8 @@
 const Brainstorming = require("../models/brainstorming.model");
 const Project = require("../models/project.model");
 const UserStories = require("../models/userStories.model");
+const BrainstormingUserRole = require('../models/brainstormingUserRole.model');
+const User = require('../models/user.model')
 const { ValidationError } = require("sequelize");
 
 module.exports = {
@@ -55,6 +57,13 @@ module.exports = {
         projectId: project,
         brainstormingDate,
         brainstormingTime,
+      });
+
+      // Atribui ao criador o papel de moderador
+      await BrainstormingUserRole.create({
+        brainstormingId: Brainstorming.id,
+        userId: creatorId,
+        role: 'Moderador',
       });
 
       await brainstorming.addUserStories(validUserStories);
@@ -357,4 +366,53 @@ module.exports = {
     }
   },
 
+  async assignRole (request, response) {
+    try {
+        const { brainstormingId, userId, role } = request.body;
+        const requestinguserId = request.userId;
+
+        if (!brainstormingId || !userId || !role) {
+          return response.status(400).json({ message: 'brainstormingId, userId e role são obrigatórios.' });
+        }
+
+        if (!['Moderador', 'Participante'].includes(role)) {
+          return response.status(400).json({ message: 'Papel inválido. Use Moderador ou Participante.' });
+        }
+
+        const isModerator = await BrainstormingUserRole.findOne({
+          where: {
+            brainstormingId,
+            userId: requestinguserId,
+            role: 'Moderador',
+          },
+        });
+
+        if (!isModerator) {
+          return response.status(403).json({ message: 'Apenas moderadores podem atribuir papeis'});
+        }
+
+        const brainstorming = await Brainstorming.findByPk(brainstormingId);
+        const user = await User.findByPk(userId);
+
+        if (!brainstorming) {
+          return response.status(404).json({ message: 'Brainstorming não encontrado.' });
+        }
+
+        if (!user) {
+          return response.status(404).json({ message: 'Usuário não encontrado.' });
+        }
+
+        // Inserir ou atualizar o papel
+        await BrainstormingUserRole.upsert({
+          brainstormingId,
+          userId,
+          role,
+        });
+
+      return response.status(200).json({ message: `Papel ${role} atribuído com sucesso.` });
+
+    } catch (error) {
+      return response.status(500).json({ message: 'Internal server error' });
+    }
+  },
 };

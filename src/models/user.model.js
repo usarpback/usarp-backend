@@ -27,6 +27,13 @@ class User extends Model {
       foreignKey: "memberId",
       as: "projectMemberships",
     });
+
+    this.belongsToMany(models.Brainstorming, {
+      through: 'BrainstormingUserRole',
+      foreignKey: 'userId',
+      otherKey: 'brainstormingId',
+      as: 'memberBrainstormings',
+    });
   }
 
   static init(sequelize) {
