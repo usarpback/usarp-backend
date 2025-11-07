@@ -2698,6 +2698,94 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
 
+  /brainstorming/assign-role:
+    post:
+      tags:
+        - Brainstorming
+      summary: Atribui um papel a um usuário em uma sessão de brainstorming
+      description: Usuário com papel de Moderador pode atribuir papel "Moderador" ou "Participante" a outro usuário na sessão.
+      security:
+        - bearerAuth: []  
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - brainstormingId
+                - userId
+                - role
+              properties:
+                brainstormingId:
+                  type: string
+                  format: uuid
+                  description: ID da sessão de brainstorming
+                  example: "550e8400-e29b-41d4-a716-446655440000"
+                userId:
+                  type: string
+                  format: uuid
+                  description: ID do usuário que receberá o papel
+                  example: "123e4567-e89b-12d3-a456-426614174000"
+                role:
+                  type: string
+                  enum:
+                    - Moderador
+                    - Participante
+                  description: Papel a ser atribuído
+                  example: Moderador
+      responses:
+        '200':
+          description: Papel atribuído / atualizado com sucesso
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Papel Moderador atribuído com sucesso."
+        '400':
+          description: Parâmetros inválidos
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Papel inválido. Use Moderador ou Participante."
+        '403':
+          description: Falta permissão para atribuir papéis
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Apenas Moderadores podem atribuir papéis."
+        '404':
+          description: Sessão de brainstorming ou usuário não encontrados
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Usuário não encontrado."
+        '500':
+          description: Erro interno no servidor
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Erro interno do servidor."
+
   /brainstorming/{brainstormingId}/status:
     patch:
       tags:
