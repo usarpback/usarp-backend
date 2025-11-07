@@ -1,4 +1,5 @@
 const UserModel = require("../models/user.model");
+const { ProjectUser } = require("../database");
 const mailer = require("../config/mailer");
 const { ValidationError } = require("sequelize");
 const dateFns = require("date-fns");
@@ -27,6 +28,19 @@ module.exports = {
       });
 
       const { password: omit, ...userWithoutPassword } = user.toJSON();
+
+      try {
+        await ProjectUser.update(
+          {
+            memberId: user.id,
+            fullName: user.fullName,
+            status: "Ativo",
+          },
+          { where: { memberEmail: email, status: "Pendente" } },
+        );
+      } catch (updateError) {
+        console.error("Erro ao vincular convites pendentes:", updateError && updateError.message ? updateError.message : updateError);
+      }
 
       return response.status(201).json(userWithoutPassword);
     } catch (error) {

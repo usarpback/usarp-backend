@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Projeto Atualizado - USARP Tool</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f7;
+            color: #51545e;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #ffffff;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        .header {
+            text-align: center;
+            padding: 10px 0;
+            background-color: #6c63ff;
+            color: #ffffff;
+            border-radius: 8px 8px 0 0;
+        }
+        .content {
+            padding: 20px;
+        }
+        .content p {
+            font-size: 16px;
+            line-height: 1.5;
+            margin: 20px 0;
+        }
+        .button {
+            display: block;
+            width: 200px;
+            margin: 20px auto;
+            padding: 10px 20px;
+            background-color: #6c63ff;
+            color: #ffffff;
+            text-align: center;
+            text-decoration: none;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+        .project-info {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            border-left: 4px solid #6c63ff;
+            margin: 20px 0;
+        }
+        .project-info h3 {
+            margin: 0 0 10px 0;
+            color: #6c63ff;
+        }
+        .change-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: 10px 0;
+            padding: 10px;
+            background-color: #fff3cd;
+            border-radius: 5px;
+            border-left: 4px solid #ffc107;
+        }
+        .old-name {
+            text-decoration: line-through;
+            color: #6c757d;
+        }
+        .new-name {
+            font-weight: bold;
+            color: #28a745;
+        }
+        .footer {
+            text-align: center;
+            padding: 10px 0;
+            font-size: 12px;
+            color: #888888;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Project Updated</h1>
+        </div>
+        <div class="content">
+            <p>Hello <strong>{{memberName}}</strong>,</p>
+            <p>We would like to inform you that <strong>{{inviterName}}</strong> is inviting you to participate in the project <strong>{{projectName}}</strong>.</p>
+
+            <div class="project-info">
+                <h3>Link for Project</h3>
+                <a href="{{projectLink}}" target="_blank" class="button">Open Project</a>
+            </div>
+
+            <p>If you have any questions about these changes, please contact the project creator.</p>
+            <p>Best regards,<br><strong>USARP Tool Team</strong></p>
+        </div>
+        <div class="footer">
+            <p>&copy; 2025 USARP Tool - Project Management System</p>
+        </div>
+    </div>
+</body>
+</html>

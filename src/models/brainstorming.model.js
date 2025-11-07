@@ -16,6 +16,13 @@ class Brainstorming extends Model {
       targetKey: "id",
       onDelete: "CASCADE",
     });
+
+    this.belongsToMany(models.User, {
+      through: 'BrainstormingUserRole',
+      foreignKey: 'brainstormingId',
+      otherKey: 'userId',
+      as: 'users',
+    });
   }
 
   static init(sequelize) {
@@ -111,6 +118,17 @@ class Brainstorming extends Model {
             },
           },
         },
+        status: {
+          type: DataTypes.ENUM('Novo', 'Bloqueado', 'Concluído/Encerrado'),
+          allowNull: true,
+          defaultValue: 'Novo',
+          validate: {
+            isIn: {
+              args: [['Novo', 'Bloqueado', 'Concluído/Encerrado']],
+              msg: "Status must be one of 'Novo', 'Bloqueado' or 'Concluído/Encerrado'.",
+            },
+          },
+        },
       },
       {
         sequelize,
@@ -122,6 +140,14 @@ class Brainstorming extends Model {
               brainstorming.brainstormingDate,
               brainstorming.brainstormingTime,
             );
+          },
+          beforeUpdate: async (brainstorming, options) => {
+            if (!brainstorming.changed || !brainstorming.changed("projectId")) return;
+            const existing = await sequelize.models.Brainstorming.findByPk(brainstorming.id);
+            if (!existing) return;
+            if (["Bloqueado", "Concluído/Encerrado"].includes(existing.status)) {
+              throw new Error("Não é possível associar um projeto a um brainstorming com status 'Bloqueado' ou 'Concluído/Encerrado'.");
+            }
           },
         },
       },

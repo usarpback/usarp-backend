@@ -10,7 +10,9 @@ const {
 const { ValidationError, where } = require("sequelize");
 const { Op } = require("sequelize");
 const mailer = require("../config/mailer");
-const { errorMonitor, promises } = require("nodemailer/lib/xoauth2");
+const { errorMonitor } = require("nodemailer/lib/xoauth2");
+const { add } = require("date-fns");
+const { update } = require("../models/user.model");
 
 module.exports = {
   async createProject(request, response) {
@@ -511,6 +513,210 @@ module.exports = {
       return response.status(200).json({ message: "Projeto atualizado com sucesso" });
     } catch (error) {
       console.error(error);
+      if (error instanceof ValidationError) {
+        const validationErrors = error.errors ? error.errors.map((err) => err.message) : [error.message];
+        return response.status(400).json({ message: "Validation error", errors: validationErrors });
+      }
+      return response.status(500).json({ message: error.message });
+    }
+  },
+
+  async getAllProjectMembers(request, response) {
+    try {
+      const projectId = request.params.id;
+
+      const projectMembers = await ProjectUser.findAll({
+        where: { projectId },
+        attributes: ["fullName", "memberEmail", "roleInProject", "organization", "profile", "memberId", "status"],
+      });
+
+      return response.status(200).json({ members: projectMembers });
+    } catch (error) {
+      console.error(error);
+      return response.status(500).json({ message: error.message });
+    }
+  },
+
+  async deleteProjectMember(request, response) {
+    try {
+      const projectId = request.params.id;
+      const memberId = request.body.memberId || request.params.memberId;
+      const userId = request.userId;
+
+      const project = await Project.findByPk(projectId);
+
+      if (!project) {
+        return response.status(404).json({ message: "Projeto não encontrado" });
+      }
+
+      if (project.creatorId !== userId) {
+        return response.status(403).json({ message: "Apenas o criador do projeto pode remover membros" });
+      }
+
+      const deleted = await ProjectUser.destroy({
+        where: { projectId, memberId },
+      });
+
+      if (!deleted) {
+        return response.status(404).json({ message: "Membro do projeto não encontrado" });
+      }
+
+      return response.status(200).json({ message: "Membro do projeto removido com sucesso" });
+    } catch (error) {
+      console.error(error);
+      return response.status(500).json({ message: error.message });
+    }
+  },
+
+  async addProjectMember(request, response) {
+    try {
+      const projectId = request.params.id;
+      const { memberEmail } = request.body;
+      const userId = request.userId;
+
+      const project = await Project.findByPk(projectId);
+      const requesterMembership = await ProjectUser.findOne({
+        where: { projectId, memberId: userId },
+      });
+      if (!project) {
+        return response.status(404).json({ message: "Projeto não encontrado" });
+      }
+
+      if (project.creatorId !== userId && requesterMembership.roleInProject === "Participante") {
+        return response.status(403).json({ message: "Apenas o criador ou moderador do projeto pode adicionar membros" });
+      }
+
+      const user = await User.findOne({ where: { email: memberEmail } });
+
+      if (!user) {
+        const projectLinkCreateAccount = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/auth/signup`;
+
+        const finalRolePending = requesterMembership && requesterMembership.roleInProject ? requesterMembership.roleInProject : "Participante";
+
+        await ProjectUser.create({
+          projectId,
+          memberId: null,
+          fullName: null,
+          memberEmail,
+          roleInProject: finalRolePending,
+          status: "Pendente",
+        });
+
+        try {
+          const inviter = await User.findOne({ where: { id: userId }, attributes: ["fullName", "email"] });
+          const inviterName = inviter && inviter.fullName ? inviter.fullName : request.userEmail || "Um usuário";
+
+          await mailer.sendMail({
+            to: memberEmail,
+            from: "mailusarp@gmail.com",
+            template: "project_invite_pending",
+            subject: "Você foi convidado para um projeto - USARP Tool",
+            context: {
+              memberName: null,
+              projectName: project.projectName,
+              inviterName,
+              projectLink: projectLinkCreateAccount,
+            },
+          });
+        } catch (emailError) {
+          console.error(`Erro ao enviar e-mail de convite para ${memberEmail}:`, emailError && emailError.message ? emailError.message : emailError);
+        }
+
+        return response.status(201).json({ message: "Convite enviado (usuário não cadastrado)", projectLinkCreateAccount });
+      }
+
+      const existingMember = await ProjectUser.findOne({ where: { memberEmail, projectId } });
+
+      if (existingMember) {
+        return response.status(400).json({ message: "Usuário já é membro do projeto" });
+      }
+
+      const finalRole = requesterMembership && requesterMembership.roleInProject ? requesterMembership.roleInProject : "Participante";
+      if (finalRole !== "Participante") {
+        return response.status(400).json({ message: "Função inválida. Apenas 'Participante' pode ser atribuída via convite." });
+      }
+
+      const userCreateProject = await ProjectUser.create({
+        projectId,
+        memberId: user.id,
+        fullName: user.fullName,
+        memberEmail,
+        roleInProject: finalRole,
+        status: "Ativo",
+      });
+
+      if (userCreateProject) {
+
+          const inviter = await User.findOne({ where: { id: userId }, attributes: ["fullName", "email"] });
+          const inviterName = inviter && inviter.fullName ? inviter.fullName : request.userEmail || "Um usuário";
+          const projectLink = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/projects/${projectId}`;
+          // Deixei a variável FRONTEND_URL no .env apontando para a URL do frontend (ex: 'http://localhost:3000')
+
+          try {
+            await mailer.sendMail({
+              to: memberEmail,
+              from: "mailusarp@gmail.com",
+              template: "project_invite",
+              subject: "Você foi convidado para um projeto - USARP Tool",
+              context: {
+                memberName: user.fullName,
+                projectName: project.projectName,
+                inviterName,
+                projectLink
+              },
+            });
+          } catch (emailError) {
+            console.error(`Erro ao enviar e-mail de convite para ${memberEmail}:`, emailError && emailError.message ? emailError.message : emailError);
+          }
+        }
+
+      return response.status(201).json({ message: "Membro adicionado ao projeto com sucesso" });
+    } catch (error) {
+      console.error(error);
+      return response.status(500).json({ message: error.message });
+    }
+  },
+
+  async updateProjectMemberRole(request, response) {
+    try {
+      const projectId = request.params.id;
+      const memberId = request.params.memberId;
+      const { memberEmail, roleInProject } = request.body;
+      const userId = request.userId;
+
+      const project = await Project.findByPk(projectId);
+
+      if (!project) {
+        return response.status(404).json({ message: "Projeto não encontrado" });
+      }
+
+      if (project.creatorId !== userId) {
+        return response.status(403).json({ message: "Apenas o criador do projeto pode atualizar funções de membros" });
+      }
+
+      let projectMember;
+      if (memberId) {
+        projectMember = await ProjectUser.findOne({ where: { projectId, memberId } });
+      } else if (memberEmail) {
+        projectMember = await ProjectUser.findOne({ where: { projectId, memberEmail } });
+      } else {
+        return response.status(400).json({ message: "memberId or memberEmail is required." });
+      }
+
+      if (!projectMember) {
+        return response.status(404).json({ message: "Membro do projeto não encontrado" });
+      }
+
+      if (roleInProject === "Moderador") {
+        return response.status(400).json({ message: "Função inválida. Apenas 'Participante' pode ser atribuída." });
+      }
+
+      projectMember.roleInProject = roleInProject;
+      await projectMember.save();
+
+      return response.status(200).json({ message: "Função do membro atualizada com sucesso" });
+    } catch (error) {
+      console.error(error);
       return response.status(500).json({ message: error.message });
     }
   },
@@ -593,5 +799,5 @@ module.exports = {
       console.error(error);
       return response.status(500).json({ message: error.message});
     }
-  }
+  },
 };
