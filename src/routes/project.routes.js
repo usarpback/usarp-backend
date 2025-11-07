@@ -10,6 +10,7 @@ ProjectRoutes.get(
 ProjectRoutes.get("/projects-details", ProjectController.getProjectsDetails);
 ProjectRoutes.delete("/project/:id", ProjectController.deleteProject);
 ProjectRoutes.put("/project/:id", ProjectController.updateProject);
+ProjectRoutes.get("/projects", ProjectController.listProjects);
 ProjectRoutes.post("/project/:id/addMember", ProjectController.addProjectMember);
 ProjectRoutes.delete("/project/:id/removeMember/:memberid", ProjectController.deleteProjectMember);
 ProjectRoutes.get("/project/:id/members", ProjectController.getAllProjectMembers);

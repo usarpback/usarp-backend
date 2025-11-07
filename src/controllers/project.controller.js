@@ -7,7 +7,7 @@ const {
   UserStories,
   ProjectUser,
 } = require("../database");
-const { ValidationError } = require("sequelize");
+const { ValidationError, where } = require("sequelize");
 const { Op } = require("sequelize");
 const mailer = require("../config/mailer");
 const { errorMonitor } = require("nodemailer/lib/xoauth2");
@@ -718,6 +718,86 @@ module.exports = {
     } catch (error) {
       console.error(error);
       return response.status(500).json({ message: error.message });
+    }
+  },
+
+  async listProjects (request, response) {
+    try {
+      const userEmail = request.userEmail;
+      const userId = request.userId
+
+      const projectMemberships = await ProjectUser.findAll({
+        where: { memberEmail: userEmail },
+        attributes: ["projectId"]
+      })
+      const creatorProjects = await Project.findAll({
+        where: { creatorId: userId},
+        attributes: ["projectId"]
+      })
+
+      const memberProjectsIds = projectMemberships.map(
+        membership => membership.projectId
+      );
+      const creatorProjectsIds = creatorProjects.map(
+        projects => projects.projectId
+      )
+      const allProjectsIds = Array.from(new Set([...memberProjectsIds, ...creatorProjectsIds]))
+
+      const {
+        offset,
+        limit,
+        status,
+        projectName,
+        orderBy,
+        orderDirection,
+      } = request.query;
+
+      const offsetValue = offset ? parseInt(offset, 10) : 0;
+      const limitValue = limit ? parseInt(limit, 10): 10;
+
+      const projectFilter = {
+      id: { [Op.in]: allProjectsIds },
+      ...(status ? { status } : {}),
+      ...(projectName ? { projectName: { [Op.like]: `%${projectName}%` } } : {}),
+    };
+
+    const order = [];
+    if (orderBy && (orderBy === 'createdAt' || orderBy === 'updateAt')){
+      order.push([
+        orderBy,
+        orderDirection && orderDirection.toUpperCase() === 'DESC' ? 'DESC' : 'ASC',
+      ])
+    }
+
+    const { rows: projects, count: total} = await Project.findAndCountAll({
+      where: projectFilter,
+      offset: offsetValue,
+      limit: limitValue,
+      order: order.length > 0 ? order : undefined,
+    })
+
+    const formattedProjects = await promises.all(projects.map(async (project)=>{
+      const projectData = project.toJSON();
+      return {
+        projectName: projectData.projectName,
+        creatorName: projectData.creator.fullName,
+        createdAt: projectData.createdAt,
+        canEdit: projectData.creatorId === userId,
+        canDelete: projectData.creatorId === userId,
+      };
+    }));
+
+    return response.status(200).json({
+      projects: formattedProjects,
+      pagination: {
+        offset: offsetValue,
+        limit: limitValue,
+        total,
+      }});
+
+    } catch (error) {
+      console.error(error);
+      return response.status(500).json({ message: error.message});
     }
   },
 };
