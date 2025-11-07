@@ -22,7 +22,7 @@ module.exports = {
       },
       member_id: {
         type: Sequelize.UUID,
-        allowNull: false,
+        allowNull: true,
         references: {
           model: "users",
           key: "id",
@@ -32,7 +32,7 @@ module.exports = {
       },
       full_name: {
         type: Sequelize.STRING,
-        allowNull: false,
+        allowNull: true,
         onUpdate: "CASCADE",
         onDelete: "CASCADE",
       },
