@@ -4,6 +4,7 @@ const UserStories = require("../models/userStories.model");
 const BrainstormingUserRole = require('../models/brainstormingUserRole.model');
 const User = require('../models/user.model')
 const { ValidationError } = require("sequelize");
+const BrainstormingUserStories = require("../models/brainstormingUserStories.model");
 
 module.exports = {
 
@@ -413,6 +414,75 @@ module.exports = {
 
     } catch (error) {
       return response.status(500).json({ message: 'Internal server error' });
+    }
+  },
+
+  async updateBrainstormingChecklist(request, response) {
+    try {
+      const { brainstormingId } = request.params;
+      const requestingUserId = request.userId;
+      const { checklistData } = request.body;
+
+      const brainstorming = await Brainstorming.findByPk(brainstormingId);
+
+      if (!brainstorming) {
+        return response.status(404).json({ message: 'Brainstorming não encontrado.' });
+      }
+
+      const userrole = await BrainstormingUserRole.findOne({
+        where: { brainstormingId, userId: requestingUserId },
+      });
+
+      if (!userrole || userrole.role !== 'Moderador') {
+        return response.status(403).json({ message: 'Apenas moderadores podem atualizar o checklist.' });
+      }
+
+      if (!checklistData) {
+        return response.status(400).json({ message: 'Payload inválido. Envie `checklistData`.' });
+      }
+
+      const updates = Array.isArray(checklistData)
+        ? checklistData
+        : Object.keys(checklistData || {}).map((k) => ({ userStoryId: k, checklist: checklistData[k] }));
+
+      if (!Array.isArray(updates) || updates.length === 0) {
+        return response.status(400).json({ message: 'Formato de `checklistData` inválido ou vazio.' });
+      }
+
+      const sequelize = BrainstormingUserStories.sequelize;
+      const results = [];
+      const recommendedCards = {};
+
+      await sequelize.transaction(async (t) => {
+        for (const item of updates) {
+          if (!item.userStoryId) {
+            results.push({ userStoryId: null, updated: false, reason: 'userStoryId ausente' });
+            continue;
+          }
+
+          const [count] = await BrainstormingUserStories.update(
+            { checklist: item.checklist },
+            { where: { brainstormingId, userStoryId: item.userStoryId }, transaction: t },
+          );
+
+          if (count === 0) {
+            results.push({ userStoryId: item.userStoryId, updated: false, reason: 'Associação não encontrada' });
+          } 
+          if (count > 0) {
+            results.push({ userStoryId: item.userStoryId, updated: true });
+            const cards = await BrainstormingUserStories.generateRecommendedCards(item.checklist);
+            recommendedCards[item.userStoryId] = cards;
+          }
+        }
+      });
+
+      return response.status(200).json({ 
+                  message: 'Checklist e recomendações geradas com sucesso.', 
+                  results, 
+                  recommendedCards 
+      });    
+      } catch (error) {
+      return response.status(500).json({ message: 'Internal server error', error: error.message });
     }
   },
 };

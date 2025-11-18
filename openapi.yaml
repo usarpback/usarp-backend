@@ -793,6 +793,98 @@ components:
                 type: string
           description: Lista de status possíveis e suas descrições
 
+    BrainstormingChecklistUpdateRequest:
+      type: object
+      description: >-
+        Payload para atualizar o(s) checklist(s) de um brainstorming.
+        Pode ser um array de objetos `{ userStoryId, checklist }` ou um objeto mapping
+        onde as chaves são `userStoryId` e os valores o `checklist` correspondente.
+      oneOf:
+        - type: array
+          items:
+            $ref: '#/components/schemas/ChecklistUpdateItem'
+        - type: object
+          additionalProperties:
+            $ref: '#/components/schemas/ChecklistSchema'
+
+    ChecklistUpdateItem:
+      type: object
+      properties:
+        userStoryId:
+          type: string
+          format: uuid
+        checklist:
+          $ref: '#/components/schemas/ChecklistSchema'
+      required:
+        - userStoryId
+        - checklist
+
+    ChecklistSchema:
+      description: Estrutura livre que representa o checklist salvo para uma associação userStory-brainstorming.
+      type: object
+      additionalProperties:
+        description: Pode ser um array de subitens selecionados ou objeto com detalhes
+        oneOf:
+          - type: array
+            items:
+              type: string
+          - type: object
+            additionalProperties:
+              type: boolean
+
+    BrainstormingChecklistUpdateResponse:
+      type: object
+      properties:
+        message:
+          type: string
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/ChecklistUpdateResult'
+        recommendedCards:
+          type: object
+          description: Mapeamento entre `userStoryId` e array de grupos de recomendações geradas.
+          additionalProperties:
+            type: array
+            items:
+              $ref: '#/components/schemas/MechanismGroup'
+
+    ChecklistUpdateResult:
+      type: object
+      properties:
+        userStoryId:
+          type: string
+          format: uuid
+        updated:
+          type: boolean
+        reason:
+          type: string
+
+    MechanismGroup:
+      type: object
+      properties:
+        type:
+          type: string
+          example: "MECANISMO_HEADER"
+        name:
+          type: string
+          description: "Nome do mecanismo (ex: Feedback do sistema)"
+        cards:
+          type: array
+          items:
+            $ref: '#/components/schemas/RecommendedCard'
+
+    RecommendedCard:
+      type: object
+      properties:
+        codigo:
+          type: string
+        descricao:
+          type: string
+        userStoryId:
+          type: string
+          format: uuid
+
   securitySchemes:
     bearerAuth:
       type: http
@@ -2910,25 +3002,60 @@ paths:
       responses:
         "200":
           description: Status atualizado com sucesso
+
+  /brainstorming/{brainstormingId}/checklist:
+    patch:
+      tags:
+        - Brainstorming
+      summary: Atualizar checklist de user stories de um brainstorming e gerar recomendações
+      description: >-
+        Atualiza o campo `checklist` de uma ou mais associações `BrainstormingUserStories` dentro do brainstorming
+        e retorna as recomendações (cards) geradas para cada user story atualizada. Apenas usuários com papel
+        `Moderador` na sessão podem executar esta operação.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: brainstormingId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: ID do brainstorming a ser atualizado
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BrainstormingChecklistUpdateRequest'
+      responses:
+        "200":
+          description: Checklist atualizado e recomendações geradas com sucesso
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/StatusUpdateResponse"
+                $ref: '#/components/schemas/BrainstormingChecklistUpdateResponse'
         "400":
-          description: Requisição inválida ou operação não permitida
+          description: Requisição inválida (formato do payload incorreto)
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ErrorResponse"
+                $ref: '#/components/schemas/ErrorResponse'
+        "403":
+          description: Usuário não tem permissão (não é Moderador)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedResponse'
         "404":
-          description: Brainstorming não encontrado
+          description: Brainstorming ou associação não encontrada
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ErrorResponse"
+                $ref: '#/components/schemas/ErrorResponse'
         "500":
           description: Erro interno do servidor
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ErrorResponse"
+                $ref: '#/components/schemas/ErrorResponse'
