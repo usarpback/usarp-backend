@@ -47,7 +47,6 @@ class UserStories extends Model {
             },
           },
         },
-
         userStoriesTitle: {
           type: DataTypes.STRING,
           allowNull: false,

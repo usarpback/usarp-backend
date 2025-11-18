@@ -24,6 +24,11 @@ module.exports = {
         onUpdate: "CASCADE",
         onDelete: "CASCADE",
       },
+      checklist: {
+        type: Sequelize.JSON, 
+        allowNull: true,
+        defaultValue: null,
+      },
       created_at: {
         allowNull: false,
         type: Sequelize.DATE,
