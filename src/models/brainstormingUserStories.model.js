@@ -1,4 +1,5 @@
 const { Model, DataTypes } = require("sequelize");
+const { USARP_CARD_MAPPING } = require('../config/usarpCardMapping'); 
 
 class BrainstormingUserStories extends Model {
   static associate(models) {
@@ -41,6 +42,11 @@ class BrainstormingUserStories extends Model {
           },
           onUpdate: "CASCADE",
           onDelete: "CASCADE",
+        },
+        checklist: {
+          type: DataTypes.JSON, 
+          allowNull: true,
+          defaultValue: null,
         },
         createdAt: {
           type: DataTypes.DATE,
@@ -90,6 +96,47 @@ class BrainstormingUserStories extends Model {
       },
     );
   }
+
+  /**
+   * Gera as cartas recomendadas (US027) com base nas seleções do checklist (US026).
+   * @param {object} checklistData - O objeto JSON salvo no campo 'checklist' (ex: { "Feedback do sistema": ["Sessão Expirada"], ... })
+   * @returns {Array<object>} Um array de cartas recomendadas, ordenadas por mecanismo.
+   */
+  static generateRecommendedCards(checklistData) {
+    const ORDERED_MECHANISMS = [
+      'Feedback do sistema',
+      'Personalização do sistema',
+      'Controle e suporte ao usuário',
+      'Entrada de dados do usuário',
+    ];
+
+    const recommendedCards = [];
+
+    ORDERED_MECHANISMS.forEach((mechanism) => {
+      const selectedSubItems = checklistData && checklistData[mechanism];
+
+      if (selectedSubItems && selectedSubItems.length > 0) {
+        recommendedCards.push({
+          type: 'MECANISMO_HEADER',
+          name: mechanism,
+          cards: [],
+        });
+
+        const currentGroup = recommendedCards[recommendedCards.length - 1].cards;
+        selectedSubItems.forEach((subItem) => {
+          const subItemKey = subItem && typeof subItem === 'string' ? subItem.trim() : subItem;
+          const cardsToAppend = USARP_CARD_MAPPING[mechanism] && USARP_CARD_MAPPING[mechanism][subItemKey];
+
+          if (cardsToAppend && Array.isArray(cardsToAppend)) {
+            currentGroup.push(...cardsToAppend);
+          }
+        });
+      }
+    });
+
+    return recommendedCards;
+  }
 }
+
 
 module.exports = BrainstormingUserStories;

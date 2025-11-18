@@ -1,7 +1,6 @@
 const express = require("express");
 const BrainstormingRoutes = express.Router();
 const BrainstormingController = require("../controllers/brainstorming.controller");
-const brainstormingController = require("../controllers/brainstorming.controller");
 
 BrainstormingRoutes.post(
   "/brainstorming/create",
@@ -41,6 +40,11 @@ BrainstormingRoutes.get(
 BrainstormingRoutes.post(
   "/brainstorming/assign-role",
   BrainstormingController.assignRole
+);
+
+BrainstormingRoutes.patch(
+  "/brainstorming/:brainstormingId/checklist",
+  BrainstormingController.updateBrainstormingChecklist,
 );
 
 module.exports = BrainstormingRoutes;
