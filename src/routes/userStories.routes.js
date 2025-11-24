@@ -18,5 +18,9 @@ userStoriesRoutes.put(
   "/userstories/:id",
   userStoriesController.updateUserStories,
 );
+userStoriesRoutes.get(
+  "/userstories/statusHelp",
+  userStoriesController.helpUserStoriesStatus,
+);
 
 module.exports = userStoriesRoutes;
