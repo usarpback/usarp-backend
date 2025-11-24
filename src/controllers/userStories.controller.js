@@ -245,17 +245,14 @@ module.exports = {
         where: { projectId: userStorie.projectId, memberId: userId },
       });
 
-      if (!projectMembership || projectMembership.roleInProject !== "Moderador") {
+      const isCreator = userStorie.creatorId === userId;
+      const isModerator = projectMembership && projectMembership.roleInProject === "Moderador";
+
+      if (!isCreator && !isModerator) {
         return response.status(403).json({
           message:
-            "You do not have permission to update this user story. Only project moderators can edit user stories.",
+            "Você não tem permissão para atualizar esta história. Apenas o criador da história ou moderadores do projeto podem editar.",
         });
-      }
-
-      if (userStorie.status !== "Ativo") {
-        return response
-          .status(400)
-          .json({ message: "Cannot update an inactive user story." });
       }
       const project = await Project.findByPk(userStorie.projectId);
       if (!project) {
@@ -292,7 +289,7 @@ module.exports = {
           attributes: ["memberEmail", "fullName"],
         });
 
-        const updater = projectMembership.fullName || request.userEmail || "Um usuário";
+        const updater = (projectMembership && projectMembership.fullName) || request.userFullName || request.userEmail || "Um usuário";
 
         for (const member of projectMembers) {
           try {
@@ -336,4 +333,40 @@ module.exports = {
       return response.status(500).json({ message: "Internal server error" });
     }
   },
+
+  async helpUserStoriesStatus(request, response) {
+    try {
+        const statuses = [
+            {
+                status: 'Nova',
+                description:
+                    'Status inicial. A História de Usuário foi cadastrada, mas ainda não foi associada a nenhum brainstorming.', 
+            },
+            {
+                status: 'Associada a um brainstorming',
+                description:
+                    'A História de Usuário está vinculada a uma única sessão de brainstorming e está pronta para ser refinada.', 
+            },
+            {
+                status: 'Associada a vários brainstormings',
+                description:
+                    'A História de Usuário está vinculada a duas ou mais sessões de brainstorming.', 
+            },
+            {
+                status: 'Bloqueado',
+                description:
+                    'A História de Usuário está com impedimentos de prosseguimento e não pode ser associada a novos brainstormings.', 
+            },
+            {
+                status: 'Concluída',
+                description:
+                    'A História de Usuário teve sua especificação finalizada e validada. Pode ser reaberta caso haja problemas (US018).',
+            },
+        ];
+
+        return response.status(200).json({ statuses });
+    } catch (error) {
+        return response.status(500).json({ message: 'Internal server error' });
+    }
+  }
 };

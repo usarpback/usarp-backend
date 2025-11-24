@@ -65,6 +65,31 @@ class BrainstormingUserStories extends Model {
         tableName: "brainstorming_userstories",
         underscored: true,
         hooks: {
+
+          afterCreate: async (record, options) => {
+            const UserStories = sequelize.models.UserStories;
+            if (!UserStories) return;
+
+            const count = await sequelize.models.BrainstormingUserStories.count({
+                where: { userStoryId: record.userStoryId },
+                transaction: options.transaction
+            });
+
+            let newStatus;
+            if (count === 1) {
+                newStatus = 'Associada a um brainstorming'; 
+            } else if (count > 1) {
+                newStatus = 'Associada a vários brainstormings'; 
+            } else {
+                return;
+            }
+
+            await UserStories.update(
+                { status: newStatus },
+                { where: { id: record.userStoryId }, transaction: options.transaction }
+            );
+          },
+
           beforeCreate: async (record, options) => {
             const Brainstorming = sequelize.models.Brainstorming;
             if (!Brainstorming) return;
@@ -76,6 +101,7 @@ class BrainstormingUserStories extends Model {
               throw new Error("Não é possível associar histórias de usuário a um brainstorming com status 'Bloqueado' ou 'Concluído/Encerrado'.");
             }
           },
+          
           beforeBulkCreate: async (records, options) => {
             const Brainstorming = sequelize.models.Brainstorming;
             if (!Brainstorming) return;

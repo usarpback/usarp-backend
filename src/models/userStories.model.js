@@ -103,13 +103,17 @@ class UserStories extends Model {
           },
         },
         status: {
-          type: DataTypes.ENUM("Ativo", "Inativo"),
+          type: DataTypes.ENUM("Ativo", "Inativo", "Nova", "Bloqueado", 
+                              "Associado a um brainstorming", "Associado a vários brainstormings", 
+                              "Concluído/Encerrado"),
           allowNull: true,
-          defaultValue: "Ativo",
+          defaultValue: "Nova",
           validate: {
             isIn: {
-              args: [["Ativo", "Inativo"]],
-              msg: "Status must be 'Ativo' or 'Inativo'.",
+              args: [["Ativo", "Inativo", "Nova", "Bloqueado", 
+                      "Associado a um brainstorming", "Associado a vários brainstormings", 
+                      "Concluído/Encerrado"]],
+              msg: "Status must be one of the predefined values.",
             },
           },
         },

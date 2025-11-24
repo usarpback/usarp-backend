@@ -2509,6 +2509,38 @@ paths:
               schema:
                 $ref: "#/components/schemas/MessageResponse"
 
+  /userstories/statusHelp:
+    get:
+      tags:
+        - UserStories
+      summary: Retorna lista de status válidos para user stories e suas descrições
+      description: Retorna uma lista de status disponíveis para as histórias de usuário e uma breve descrição de cada um.
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Lista de status e descrições
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  statuses:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        status:
+                          type: string
+                        description:
+                          type: string
+        "500":
+          description: Erro interno do servidor
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+
   /brainstorming/create:
     post:
       tags:
