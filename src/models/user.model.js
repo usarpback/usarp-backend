@@ -229,6 +229,15 @@ class User extends Model {
           allowNull: true,
           defaultValue: null,
         },
+        avatarUrl: {
+          type: DataTypes.STRING,
+          allowNull: true,
+          validate: {
+            isUrl: {
+              msg: "O campo avatarUrl deve ser uma URL válida.",
+            },
+          },
+        },
       },
       {
         sequelize,

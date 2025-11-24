@@ -3,6 +3,8 @@ const { ValidationError } = require("sequelize");
 const bcrypt = require("bcrypt");
 const dateFns = require("date-fns");
 const { formatBlockedAccountMessage } = require("../helpers/dateAndTime");
+const uploadToCloudinary = require("../helpers/cloudinary");
+const sharp = require("sharp");
 
 module.exports = {
   async getAllUsers(request, response) {
@@ -203,6 +205,40 @@ module.exports = {
         });
       }
       return response.status(500).send({ message: "Internal server error" });
+    }
+  },
+
+  async uploadAvatar(request, response){
+    try{
+      const userId = request.userId;
+
+      if (!request.file) {
+        return response.status(400).json({message: 'É obrigatorio ter um arquivo para o avatar'});
+      }
+
+      const processedImageBuffer = await sharp(request.file.buffer)
+        .resize(250, 250)
+        .png()
+        .toBuffer();
+
+      const result = await uploadToCloudinary(processedImageBuffer, {
+        folder: 'user_avatars',
+        public_id: `avatar_${userId}`,
+        overwrite: true,
+        resource_type: 'image',
+      });
+
+      await UserModel.update({ avatarUrl: result.secure_url}, {
+        where: { id: userId }
+      });
+
+      return response.status(200).json({ success: true, avatarUrl: result.secure_url});
+    } catch (error) {
+      if (error instanceof ValidationError) {
+        const validationErrors = error.errors.map(err => err.message);
+        return response.status(400).json({ message: 'Validation errors', errors: validationErrors});
+      }
+      return response.status(500).json({ message: error.message });
     }
   },
 };

@@ -1307,7 +1307,54 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
-
+  /user/avatar:
+    post:
+      tags:
+        - Users
+      summary: Upload do avatar do usuário
+      description: Faz upload do avatar do usuário, valida o arquivo e atualiza a url no banco.
+      consumes:
+        - multipart/from-data
+      parameters: 
+       -  in: formData
+          name: avatar
+          type: file 
+          description: Imagem do avatar (JPEG ou PNG, máximo 3MB)
+          required: true
+      responses:
+        '200':
+          description: Avatar atualizado com sucesso
+          content: 
+            application/json:
+              schema:
+                type: object
+                properties: 
+                  sucess:
+                    type: boolean
+                    example: true
+                  avatarUrl:
+                    type: string
+                    example: "https://res.cloudinary.com/.../avatar_userid.png"
+        '400':
+          description: Requisição inválida
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "arquivo avatar é obrigatório"
+        '500':
+          description: Erro interno do servidor
+          content:
+            application/json:
+              schema:
+                type: object
+                properties: 
+                  message:
+                    type: string
+                    example: "Internal server error"
   /project/create:
     post:
       tags:
