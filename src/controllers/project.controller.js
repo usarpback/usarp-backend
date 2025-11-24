@@ -800,4 +800,27 @@ module.exports = {
       return response.status(500).json({ message: error.message});
     }
   },
+
+  async helpProjectsStatus(request, response) {
+    try {
+      const statusHelp = [
+        {
+          status: "Ativo",
+          description: "O projeto está em andamento e aberto para novas atividades."
+        },
+        {
+          status: "Bloqueado",
+          description: "O projeto está temporariamente pausado e não pode receber novas alterações."
+        },
+        {
+          status: "Concluído/Encerrado",
+          description: "O projeto foi finalizado e todas as suas etapas foram concluídas."
+        }
+      ];
+
+      return response.status(200).json({ statusHelp });
+    } catch (error) {
+      return response.status(500).json({ message: "Internal server error" });
+    }
+  },
 };

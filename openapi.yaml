@@ -2172,6 +2172,42 @@ paths:
               schema:
                 $ref: "#/components/schemas/MessageResponse"
 
+  /projects/status-help:
+    get:
+      tags:
+        - Projects
+      summary: Explicação dos status dos projetos
+      description: Retorna a lista de status possíveis para projetos junto com suas descrições para ajudar o usuário.
+      responses:
+        '200':
+          description: Lista dos status explicados
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  statuses:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        status:
+                          type: string
+                          example: "Ativo"
+                        description:
+                          type: string
+                          example: "O projeto está em andamento e aberto para novas atividades."
+        '500':
+          description: Erro interno do servidor
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Internal server error"
+
   /userstories/register:
     post:
       tags:

@@ -99,13 +99,13 @@ class Project extends Model {
           onDelete: "CASCADE",
         },
         status: {
-          type: DataTypes.ENUM("Novo", "Excluído", "Mais antigo"),
+          type: DataTypes.ENUM("Ativo", "Bloqueado", "Concluído/Encerrado"),
           allowNull: true,
-          defaultValue: "Novo",
+          defaultValue: "Ativo",
           validate: {
             isIn: {
-              args: [["Novo", "Excluído", "Mais antigo"]],
-              msg: "Status must be 'Novo', 'Excluído' or 'Mais antigo'.",
+              args: [["Ativo", "Bloqueado", "Concluído/Encerrado"]],
+              msg: "Status must be 'Ativo', 'Bloqueado' or 'Concluído/Encerrado'.",
             },
           },
         },

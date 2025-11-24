@@ -15,5 +15,6 @@ ProjectRoutes.post("/project/:id/addMember", ProjectController.addProjectMember)
 ProjectRoutes.delete("/project/:id/removeMember/:memberid", ProjectController.deleteProjectMember);
 ProjectRoutes.get("/project/:id/members", ProjectController.getAllProjectMembers);
 ProjectRoutes.put("/project/:id/members/:memberId", ProjectController.updateProjectMemberRole);
+ProjectRoutes.get("/projects/status-help", ProjectController.helpProjectsStatus);
 
 module.exports = ProjectRoutes;
