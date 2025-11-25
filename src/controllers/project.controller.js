@@ -7,12 +7,10 @@ const {
   UserStories,
   ProjectUser,
 } = require("../database");
-const { ValidationError, where } = require("sequelize");
+const { ValidationError } = require("sequelize");
 const { Op } = require("sequelize");
 const mailer = require("../config/mailer");
-const { errorMonitor } = require("nodemailer/lib/xoauth2");
-const { add } = require("date-fns");
-const { update } = require("../models/user.model");
+
 
 module.exports = {
   async createProject(request, response) {
@@ -394,20 +392,17 @@ module.exports = {
     });
 
     try {
-      //Busca projeto
       const project = await Project.findByPk(projectId);
       if (!project) {
         await t.rollback();
         return response.status(404).json({ message: "Projeto não encontrado"});
       }
-      // Verifica se é o criador do projeto
       if (project.creatorId !== userId) {
         await t.rollback();
         return response.status(403).json({ message: "Apenas o criador pode excluir o projeto"});
       }
 
-      // Verifica existencia de brainstormings associadas
-      const brainstormings = await Brainstorming.findAll({Where: {ProjectId}, transaction: t});
+      const brainstormings = await Brainstorming.findAll({where: {projectId}, transaction: t});
 
       if (brainstormings.length > 0) {
         await t.rollback();
@@ -415,19 +410,16 @@ module.exports = {
         })
       }
 
-      //Busca membros do projeto
-      const projectUsers = await projectUser.findAll({
+      const projectUsers = await ProjectUser.findAll({
         where: { projectId },
         attributes: ["memberEmail", "fullName"],
         transaction: t
       });
 
-      //Exclusão em cascata
       await UserStories.destroy({ where: { projectId }, transaction: t});
       await ProjectUser.destroy({ where: { projectId }, transaction: t});
       await Project.destroy({ where: { projectId }, transaction: t});
 
-      //Notificar membros do projeto 
       for (const member of projectUsers) {
         try {
           await mailer.sendMail({
@@ -776,7 +768,7 @@ module.exports = {
       order: order.length > 0 ? order : undefined,
     })
 
-    const formattedProjects = await promises.all(projects.map(async (project)=>{
+    const formattedProjects = await Promise.all(projects.map(async (project)=>{
       const projectData = project.toJSON();
       return {
         projectName: projectData.projectName,
