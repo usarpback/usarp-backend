@@ -7,6 +7,9 @@ const hbs = require('nodemailer-express-handlebars');
     auth: {
       user: "mailusarp@gmail.com",
       pass: "ltkksghqobskbreg"
+    },
+    tls: {
+    rejectUnauthorized: false, // remover producao
     }
   });
 

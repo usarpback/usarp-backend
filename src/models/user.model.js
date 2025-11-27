@@ -98,6 +98,7 @@ class User extends Model {
               msg: "The 'password' field cannot be empty",
             },
             isStrongPassword(value) {
+              if (value.startsWith("$2b$")) return;
               if (
                 !/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()\-_=+{};:,<.>~|/\\])[^\s]{8,15}$/.test(
                   value,
@@ -245,6 +246,7 @@ class User extends Model {
           beforeCreate: async (user) => {
             if (user.changed("password")) {
               const hashedPassword = await bcrypt.hash(user.password, 10);
+              console.log("Hashing password for new user");
               user.password = hashedPassword;
             }
           },
