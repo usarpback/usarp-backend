@@ -58,6 +58,10 @@ module.exports = {
         allowNull: false,
         type: Sequelize.DATE,
       },
+      status: {
+        allowNull: false,
+        type: Sequelize.ENUM("Ativo", "Pendente"),
+      },
     });
   },
 
