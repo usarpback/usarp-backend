@@ -1,6 +1,7 @@
 const UserStories = require("../models/userStories.model");
 const ProjectUser = require("../models/projectUser.model");
 const Project = require("../models/project.model");
+const BrainstormingUserStories = require("../models/brainstormingUserStories.model");
 const paginate = require("../helpers/paginate");
 const { ValidationError } = require("sequelize");
 const mailer = require("../config/mailer");
@@ -328,6 +329,53 @@ module.exports = {
         console.error(error);
         return response.status(500).json({ message: "Internal server error" });
       }
+    } catch (err) {
+      console.error(err);
+      return response.status(500).json({ message: "Internal server error" });
+    }
+  },
+
+  async deleteUserStories(request, response) {
+    const { id } = request.params;
+    const userId = request.userId;
+
+    try {
+      const userStorie = await UserStories.findByPk(id);
+      if (!userStorie) {
+        return response
+          .status(404)
+          .json({ message: `User story with id '${id}' not found.` });
+      }
+
+      const projectMembership = await ProjectUser.findOne({
+        where: { projectId: userStorie.projectId, memberId: userId },
+      });
+
+      const isCreator = userStorie.creatorId === userId;
+      const isModerator = projectMembership && projectMembership.roleInProject === "Moderador";
+
+      if (!isCreator && !isModerator) {
+        return response.status(403).json({
+          message:
+            "You do not have permission to delete this user story. Only the creator or project moderators can delete it.",
+        });
+      }
+            
+      const associations = await BrainstormingUserStories.count({
+          where: { userStoryId: id },
+      });
+
+      if (associations > 0) {
+          return response.status(403).json({
+              message: `A exclusão não é permitida. Esta História de Usuário possui ${associations} vínculo(s) ativo(s) com sessão(ões) de brainstorming. Remova o vínculo primeiro.`,
+              hasActiveBrainstormingLink: true
+          });
+      }
+
+      await userStorie.destroy();
+      return response
+        .status(200)
+        .json({ message: "User story deleted successfully." });
     } catch (err) {
       console.error(err);
       return response.status(500).json({ message: "Internal server error" });
