@@ -129,7 +129,7 @@ module.exports = {
         }
 
         const token = user.generateToken("30m");
-        const resetLink = `http://localhost:3000/auth/reset_password/${user.id}/${token}`;
+        const resetLink = `http://localhost:3000/auth/reset_password/${token}/${user.id}`;
         
         mailer.sendMail({
           to: email,
