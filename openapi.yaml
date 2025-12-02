@@ -2829,6 +2829,98 @@ paths:
               schema:
                 $ref: "#/components/schemas/MessageResponse"
 
+  /brainstorming/start/{brainstormingId}:
+    post:
+      tags:
+        - Brainstorming
+      summary: Iniciar sessão de brainstorming e carregar quadro
+      description: >-
+        Inicia a sessão de brainstorming carregando as user stories associadas e
+        seus checklists. Apenas usuários com papel `Moderador` na sessão podem iniciar.
+        O projeto associado deve estar no status `Ativo`.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: brainstormingId
+          in: path
+          required: true
+          description: UUID do brainstorming a ser iniciado
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Sessão iniciada com sucesso e quadro carregado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  brainstormingId:
+                    type: string
+                    format: uuid
+                  sessionData:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        userStoryId:
+                          type: string
+                          format: uuid
+                        userStorieNumber:
+                          type: integer
+                        userStoriesTitle:
+                          type: string
+                        card:
+                          type: string
+                        conversation:
+                          type: string
+                        confirmation:
+                          type: string
+                        checklist:
+                          type: object
+              example:
+                message: "Sessão iniciada com sucesso. Quadro de brainstorming carregado."
+                brainstormingId: "br-123e4567-e89b-12d3-a456-426614174000"
+                sessionData:
+                  - userStoryId: "us-123e4567-e89b-12d3-a456-426614174000"
+                    userStorieNumber: 1
+                    userStoriesTitle: "Como usuário, quero autenticar"
+                    card: "Cartão: Login"
+                    conversation: "Detalhes da conversa"
+                    confirmation: "Aceitação: login com e-mail e senha"
+                    checklist: {}
+        "403":
+          description: Forbidden — projeto inativo ou usuário não é Moderador
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+              example:
+                message: "Apenas moderadores podem iniciar a sessão de brainstorming."
+        "404":
+          description: Brainstorming não encontrado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+              example:
+                message: "Brainstorming não encontrado."
+        "401":
+          description: Token ausente ou inválido
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UnauthorizedResponse"
+        "500":
+          description: Erro interno do servidor
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+
   /brainstorming/getAllUserBrainstormingsGrid/{id}:
     get:
       tags:

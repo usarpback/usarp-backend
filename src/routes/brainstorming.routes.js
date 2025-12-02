@@ -47,4 +47,10 @@ BrainstormingRoutes.patch(
   BrainstormingController.updateBrainstormingChecklist,
 );
 
+BrainstormingRoutes.post(
+  "/brainstorming/start/:brainstormingId",
+  BrainstormingController.startBrainstormingSession,
+);
+
+
 module.exports = BrainstormingRoutes;
