@@ -485,4 +485,63 @@ module.exports = {
       return response.status(500).json({ message: 'Internal server error', error: error.message });
     }
   },
+
+  async startBrainstormingSession(request, response) {
+    const { brainstormingId } = request.params;
+    const requestingUserId = request.userId;
+    try {
+
+      const brainstorming = await Brainstorming.findByPk(brainstormingId);
+
+      if (!brainstorming) {
+        return response.status(404).json({ message: 'Brainstorming não encontrado.' });
+      }
+      
+      const project = await Project.findByPk(brainstorming.projectId);
+
+      if (!project || project.status !== 'Ativo') { 
+          return response.status(403).json({ message: "O projeto associado não está ativo. Não é possível iniciar a sessão." });
+      }
+
+      const userrole = await BrainstormingUserRole.findOne({
+        where: { brainstormingId, userId: requestingUserId },
+      });
+
+      if (!userrole || userrole.role !== 'Moderador') {
+        return response.status(403).json({ message: 'Apenas moderadores podem iniciar a sessão de brainstorming.' });
+      }
+
+      const sessionData = await BrainstormingUserStories.findAll({
+            where: { brainstormingId },
+            include: [{ 
+                model: UserStories, 
+                attributes: ['id', 'userStorieNumber', 'userStoriesTitle', 'card', 'conversation', 'confirmation']
+            }],
+            attributes: ['userStoryId', 'checklist'] 
+        });
+        
+        const formattedSession = sessionData.map(data => {
+            const us = data.UserStory.toJSON(); 
+            return {
+                userStoryId: data.userStoryId,
+                userStorieNumber: us.userStorieNumber,
+                userStoriesTitle: us.userStoriesTitle,
+                card: us.card,
+                conversation: us.conversation,
+                confirmation: us.confirmation,
+                checklist: data.checklist, 
+            };
+        });
+
+        return response.status(200).json({
+            message: "Sessão iniciada com sucesso. Quadro de brainstorming carregado.",
+            brainstormingId: brainstorming.id,
+            sessionData: formattedSession,
+        });
+
+    } catch (error) {
+        console.error("Erro ao iniciar a sessão de brainstorming:", error.message);
+        return response.status(500).json({ message: "Internal server error" });
+    }
+  },
 };
