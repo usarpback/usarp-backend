@@ -23,4 +23,9 @@ userStoriesRoutes.get(
   userStoriesController.helpUserStoriesStatus,
 );
 
+userStoriesRoutes.delete(
+  "/userstories/:id",
+  userStoriesController.deleteUserStories,
+);
+
 module.exports = userStoriesRoutes;

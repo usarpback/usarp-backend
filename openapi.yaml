@@ -2405,6 +2405,67 @@ paths:
                 message: "Internal server error"
 
   /userstories/{id}:
+    delete:
+      tags:
+        - UserStories
+      summary: Deletar uma história de usuário
+      description: >-
+        Deleta uma história de usuário se o solicitante for o criador da história
+        ou um Moderador do projeto. A exclusão não é permitida quando houver
+        vínculos ativos com sessões de brainstorming — remova-os antes de excluir.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: UUID da user story a ser excluída
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: User story deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+              example:
+                message: "User story deleted successfully."
+        "403":
+          description: Deleção proibida (não autorizado ou possui associações ativas)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+              examples:
+                not_authorized:
+                  value:
+                    message: "You do not have permission to delete this user story. Only the creator or project moderators can delete it."
+                has_associations:
+                  value:
+                    message: "A exclusão não é permitida. Esta História de Usuário possui 2 vínculo(s) ativo(s) com sessão(ões) de brainstorming. Remova o vínculo primeiro."
+                    hasActiveBrainstormingLink: true
+        "404":
+          description: User story not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+              example:
+                message: "User story with id 'us-123' not found."
+        "401":
+          description: Token missing or invalid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UnauthorizedResponse"
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
     put:
       tags:
         - UserStories
