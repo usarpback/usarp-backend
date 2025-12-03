@@ -7,7 +7,7 @@ info:
     name: USARP Tool Backend Team
     email: usarpback@gmail.com
 servers:
-  - url: http://merry-gratitude-production.up.railway.app
+  - url: https://merry-gratitude-production.up.railway.app
     description: production
 
 tags:
