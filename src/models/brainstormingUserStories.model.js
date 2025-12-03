@@ -48,6 +48,12 @@ class BrainstormingUserStories extends Model {
           allowNull: true,
           defaultValue: null,
         },
+        order: {
+          type: DataTypes.INTEGER,
+          allowNull: true,
+          defaultValue: null,
+          comment: "Define a posição da US na fila de execução do brainstorming (1, 2, 3...)"
+        },
         createdAt: {
           type: DataTypes.DATE,
           allowNull: false,

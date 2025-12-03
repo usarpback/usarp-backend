@@ -492,14 +492,12 @@ module.exports = {
     try {
 
       const brainstorming = await Brainstorming.findByPk(brainstormingId);
-
       if (!brainstorming) {
         return response.status(404).json({ message: 'Brainstorming não encontrado.' });
       }
       
       const project = await Project.findByPk(brainstorming.projectId);
-
-      if (!project || project.status !== 'Ativo') { 
+      if (!project || project.status !== 'Ativo' && project.status !== 'Novo') { 
           return response.status(403).json({ message: "O projeto associado não está ativo. Não é possível iniciar a sessão." });
       }
 
@@ -517,31 +515,101 @@ module.exports = {
                 model: UserStories, 
                 attributes: ['id', 'userStorieNumber', 'userStoriesTitle', 'card', 'conversation', 'confirmation']
             }],
-            attributes: ['userStoryId', 'checklist'] 
-        });
-        
-        const formattedSession = sessionData.map(data => {
-            const us = data.UserStory.toJSON(); 
-            return {
-                userStoryId: data.userStoryId,
-                userStorieNumber: us.userStorieNumber,
-                userStoriesTitle: us.userStoriesTitle,
-                card: us.card,
-                conversation: us.conversation,
-                confirmation: us.confirmation,
-                checklist: data.checklist, 
-            };
+            attributes: ['userStoryId', 'checklist', 'order'] 
         });
 
-        return response.status(200).json({
-            message: "Sessão iniciada com sucesso. Quadro de brainstorming carregado.",
-            brainstormingId: brainstorming.id,
-            sessionData: formattedSession,
-        });
+      sessionStorage.sort((a,b) => {
+        const storyA = a.order || Number.MAX_SAFE_INTEGER;
+        const storyB = b.order || Number.MAX_SAFE_INTEGER;
+        
+        if(a.order !== null && b.order !== null){
+          return a.order-b.order;
+        }
+
+        if (a.order !== null) return -1;
+        
+        if (b.order !== null) return 1;
+
+        const getNumber = (str) => {
+            const match = str.match(/\d+/);
+            return match ? parseInt(match[0], 10) : Infinity;
+        };
+
+        const numA = getNumber(storyA.userStorieNumber);
+        const numB = getNumber(storyB.userStorieNumber);
+
+        if (numA !== numB) {
+            return numA - numB; 
+        }
+
+        return storyA.userStorieNumber.localeCompare(storyB.userStorieNumber);
+      })
+        
+      const formattedSession = sessionData.map(data => {
+          const us = data.UserStory.toJSON(); 
+          return {
+              userStoryId: data.userStoryId,
+              userStorieNumber: us.userStorieNumber,
+              userStoriesTitle: us.userStoriesTitle,
+              card: us.card,
+              conversation: us.conversation,
+              confirmation: us.confirmation,
+              checklist: data.checklist, 
+              order: data.order
+          };
+      });
+
+      return response.status(200).json({
+          message: "Sessão iniciada com sucesso. Quadro de brainstorming carregado.",
+          brainstormingId: brainstorming.id,
+          sessionData: formattedSession,
+      });
 
     } catch (error) {
         console.error("Erro ao iniciar a sessão de brainstorming:", error.message);
         return response.status(500).json({ message: "Internal server error" });
     }
   },
+
+  async updateBrainstormingUserStoryOrder(request, response) {
+    const { brainstormingId } = request.params;
+    const { orderedUserStoriesID } = request.body;
+    const requestingUserId = request.userId;
+    
+    try {
+
+      const userRole = await BrainstormingUserRole.findOne({
+        where: { brainstormingId, userId: requestingUserId },
+      });
+
+      if (!userRole || userRole.role !== 'Moderador') {
+        return response.status(403).json({ message: "Apenas moderadores podem alterar a ordem das histórias." });
+      }
+      
+      if (orderedUserStoriesID.length > 3){
+        return response.status(403).json({message: "O sistema permite a ordenação manual de no máximo 3 histórias por vez."})
+      }
+
+      const sequelize = BrainstormingUserStories.sequelize;
+      await sequelize.transaction(async (t) => {
+        await BrainstormingUserStories.update(
+          { order: null },
+          { where: {brainstormingId}, transaction: t }
+        );
+
+        for (let i = 0; i < orderedUserStoriesID.length; i++) {
+          const userStoryId = orderedUserStoriesID[i];
+          await BrainstormingUserStories.update(
+            { order: i + 1 },
+            { where: { brainstormingId, userStoryId }, transaction: t }
+          );
+        }
+      })
+
+      return response.status(200).json({ message: "Ordem das histórias de usuário atualizada com sucesso." });
+
+    }catch (error) {
+        return response.status(500).json({ message: "Erro ao ordenar histórias.", error: error.message });
+    }
+  }
 };
