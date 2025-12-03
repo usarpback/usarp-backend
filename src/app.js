@@ -22,7 +22,7 @@ class App {
     this.express.use(express.urlencoded({ extended: true }));
 
     const corsOptions = {
-      origin: process.env.CORS_ORIGIN || "http://localhost:3333",
+      origin: process.env.CORS_ORIGIN || "http://merry-gratitude-production.up.railway.app",
       methods: ["GET", "POST", "PUT", "DELETE"],
       allowedHeaders: ["Content-Type", "Authorization"],
     };
