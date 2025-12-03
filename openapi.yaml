@@ -885,11 +885,6 @@ components:
           type: string
           format: uuid
 
-  securitySchemes:
-    bearerAuth:
-      type: http
-      scheme: bearer
-      bearerFormat: JWT
 
 paths:
   /auth/signup:
