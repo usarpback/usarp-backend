@@ -3,14 +3,11 @@ const nodemailer = require('nodemailer');
 const hbs = require('nodemailer-express-handlebars');
 
   const transport = nodemailer.createTransport({
-    service: "gmail",
+    service: process.env.EMAIL_SERVICE,
     auth: {
-      user: "mailusarp@gmail.com",
-      pass: "ltkksghqobskbreg"
+      user: process.env.EMAIL_LOGIN ,
+      pass: process.env.EMAIL_PASSWORD
     },
-    tls: {
-    rejectUnauthorized: false, // remover producao
-    }
   });
 
   transport.use('compile', hbs({
