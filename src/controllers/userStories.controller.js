@@ -416,5 +416,31 @@ module.exports = {
     } catch (error) {
         return response.status(500).json({ message: 'Internal server error' });
     }
-  }
+  },
+
+  async listUserStories(request, response){
+    try {
+      const { projectId } = request.params;
+      const userId = request.userId;
+
+      const member = await ProjectUser.findOne({
+        where: { projectId, memberId: userId, status: "Ativo"},
+      });
+
+      if (!member) {
+        return response.status(403).json({ message: "You are not a member of this project"});
+      }
+
+      const stories = await userStories.findAll({
+        where: { projectId },
+        order: [["userStorieNumber", "ASC"]],
+        attributes: ["id", "userStorieNumber", "userStoriesTitle", "status"],
+      });
+
+      return response.status(200).json(stories);
+
+    }  catch (error){
+      return response.status(500).json({ message: "Internal server error" });
+    }
+  },
 };
