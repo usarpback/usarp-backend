@@ -28,4 +28,9 @@ userStoriesRoutes.delete(
   userStoriesController.deleteUserStories,
 );
 
+userStoriesRoutes.get(
+  "/projects/:projectId/user-stories",
+  userStoriesController.listUserStories,
+);
+
 module.exports = userStoriesRoutes;

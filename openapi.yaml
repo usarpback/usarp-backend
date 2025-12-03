@@ -2602,6 +2602,57 @@ paths:
               schema:
                 $ref: "#/components/schemas/MessageResponse"
 
+  /projects/{projectId}/user-stories:
+    get:
+      tags:
+        - UserStories
+      summary: Lista histórias de usuário de um projeto
+      description: Retorna as histórias de usuário do projeto em ordem crescente pelo número.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          description: ID do projeto
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Lista de histórias de usuário
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: string
+                      format: uuid
+                    userStorieNumber:
+                      type: string
+                      example: US001
+                    userStoriesTitle:
+                      type: string
+                      example: Cadastrar autenticação no sistema
+                    status:
+                      type: string
+                      enum:
+                        - Ativo
+                        - Inativo
+                        - Nova
+                        - Bloqueado
+                        - Associado a um brainstorming
+                        - Associado a vários brainstormings
+                        - Concluído/Encerrado
+                      example: Ativo
+        '401':
+          description: Token inválido ou não fornecido
+        '403':
+          description: Usuário não é membro ativo do projeto
+
   /brainstorming/create:
     post:
       tags:
