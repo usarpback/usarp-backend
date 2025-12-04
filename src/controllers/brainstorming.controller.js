@@ -2,7 +2,8 @@ const Brainstorming = require("../models/brainstorming.model");
 const Project = require("../models/project.model");
 const UserStories = require("../models/userStories.model");
 const BrainstormingUserRole = require('../models/brainstormingUserRole.model');
-const User = require('../models/user.model')
+const User = require('../models/user.model');
+const Note = require('../models/notes.model');
 const { ValidationError } = require("sequelize");
 const BrainstormingUserStories = require("../models/brainstormingUserStories.model");
 
@@ -571,6 +572,101 @@ module.exports = {
     }
   },
 
+  async createNote(request, response) {
+    try {
+      const { brainstormingId, userStoryId, cardCode } = request.params;
+      const { text } = request.body;
+      const userId = request.userId;
+
+      if (!text) {
+        return response.status(400).json({ message: "texto é obrigatório" });
+      }
+
+      const role = await BrainstormingUserRole.findOne({
+        where: { userId, brainstormingId, roleInBrainstorming: "Moderador" },
+      });
+
+      if (!role) {
+        return response.status(403).json({ message: "Apenas moderadores podem criar anotações" });
+      }
+
+      const existing = await Note.findOne({
+        where: { brainstormingId, userStoryId, cardCode },
+      });
+
+      if (existing) {
+        return response.status(409).json({ message: "Já existe anotação para esta carta" });
+      }
+
+      const note = await Note.create({
+        brainstormingId,
+        userStoryId,
+        cardCode,
+        text,
+        authorId: userId,
+      });
+
+      return response.status(201).json(note);
+    } catch {
+      return response.status(500).json({ message: "Internal server error" });
+    }
+  },
+
+  async updateNote (request, response) {
+    try{
+      const { brainstormingId, userStoryId, cardCode } = request.params;
+      const { text } = request.body;
+      const userId = request.userId;
+
+    if (!text) {
+      return response.status(400).json({ message: "texto é obrigatório" });
+    }
+
+    const role = await BrainstormingUserRole.findOne({
+      where: { userId, brainstormingId, roleInBrainstorming: "Moderador" },
+    });
+
+    if (!role) {
+      return response.status(403).json({ message: "Apenas moderadores podem editar anotações" });
+    }
+
+    const note = await Note.findOne({
+      where: { brainstormingId, userStoryId, cardCode },
+    });
+    if (!note) {
+      return response.status(404).json({ message: "Anotação não encontrada para esta carta" });
+    }
+
+    await note.update({ text });
+
+    return response.status(200).json(note);
+    } catch {
+      return response.status(500).json({ message: "Internal server error"});
+    }
+  },
+
+  async getNote (request, response) {
+    try{
+      const { brainstormingId, userStoryId, cardCode } = request.params;
+      const userId = request.userId;
+
+      const role = await BrainstormingUserRole.findOne({
+        where: { userId, brainstormingId },
+      });
+
+      if (!role){
+        return response.status(403).json({ message: "Apenas membros do brainstorming podem vizualizar anotações"});
+      }
+
+      const note = await Note.findOne({
+        where: { brainstormingId, userStoryId, cardCode },
+      });
+
+      return response.status(200).json(note);
+    } catch {
+      return response.status(500).json({ message: "Internal server error"});  
+    }
+  },
   async updateBrainstormingUserStoryOrder(request, response) {
     const { brainstormingId } = request.params;
     const { orderedUserStoriesID } = request.body;
@@ -611,5 +707,5 @@ module.exports = {
     }catch (error) {
         return response.status(500).json({ message: "Erro ao ordenar histórias.", error: error.message });
     }
-  }
+  },
 };
