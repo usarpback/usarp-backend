@@ -3315,10 +3315,10 @@ paths:
           description: Erro interno do servidor
 
   /brainstormings/{brainstormingId}/user-stories/{userStoryId}/cards/{cardCode}/note:
-    put:
+    post:
       tags:
         - Brainstorming
-      summary: Criar ou atualizar anotação da carta em uma user story de um brainstorming
+      summary: Criar anotação para uma carta em uma user story de um brainstorming
       security:
         - bearerAuth: []
       parameters:
@@ -3328,20 +3328,20 @@ paths:
           schema:
             type: string
             format: uuid
-          description: ID do brainstorming
+
         - in: path
           name: userStoryId
           required: true
           schema:
             type: string
             format: uuid
-          description: ID da user story associada ao brainstorming
+
         - in: path
           name: cardCode
           required: true
           schema:
             type: string
-          description: Código da carta recomendada (ex. M1-R1)
+            
       requestBody:
         required: true
         content:
@@ -3355,12 +3355,6 @@ paths:
                   type: string
                   description: Texto da anotação
       responses:
-        "200":
-          description: Anotação atualizada com sucesso
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Note"
         "201":
           description: Anotação criada com sucesso
           content:
@@ -3371,5 +3365,59 @@ paths:
           description: Requisição inválida (texto ausente)
         "403":
           description: Usuário não é moderador do brainstorming
+        "409":
+          description: Já existe anotação para esta carta
+        "500":
+          description: Erro interno do servidor
+
+    put:
+      tags:
+        - Brainstorming
+      summary: Atualizar anotação da carta em uma user story de um brainstorming
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: brainstormingId
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - in: path
+          name: userStoryId
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - in: path
+          name: cardCode
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - text
+              properties:
+                text:
+                  type: string
+                  description: Novo texto da anotação
+      responses:
+        "200":
+          description: Anotação atualizada com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Note"
+        "400":
+          description: Requisição inválida (texto ausente)
+        "403":
+          description: Usuário não é moderador do brainstorming
+        "404":
+          description: Anotação não encontrada para esta carta
         "500":
           description: Erro interno do servidor

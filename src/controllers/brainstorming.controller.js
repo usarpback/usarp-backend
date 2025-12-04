@@ -546,13 +546,13 @@ module.exports = {
     }
   },
 
-    async createNote (request, response){
+  async createNote(request, response) {
     try {
       const { brainstormingId, userStoryId, cardCode } = request.params;
       const { text } = request.body;
       const userId = request.userId;
 
-      if(!text){
+      if (!text) {
         return response.status(400).json({ message: "texto é obrigatório" });
       }
 
@@ -564,11 +564,15 @@ module.exports = {
         return response.status(403).json({ message: "Apenas moderadores podem criar anotações" });
       }
 
-      let note  = await Note.findOne({
+      const existing = await Note.findOne({
         where: { brainstormingId, userStoryId, cardCode },
       });
 
-      note = await Note.create({
+      if (existing) {
+        return response.status(409).json({ message: "Já existe anotação para esta carta" });
+      }
+
+      const note = await Note.create({
         brainstormingId,
         userStoryId,
         cardCode,
@@ -579,6 +583,39 @@ module.exports = {
       return response.status(201).json(note);
     } catch {
       return response.status(500).json({ message: "Internal server error" });
+    }
+  },
+
+  async updateNote (request, response) {
+    try{
+      const { brainstormingId, userStoryId, cardCode } = request.params;
+      const { text } = request.body;
+      const userId = request.userId;
+
+    if (!text) {
+      return response.status(400).json({ message: "texto é obrigatório" });
+    }
+
+    const role = await BrainstormingUserRole.findOne({
+      where: { userId, brainstormingId, roleInBrainstorming: "Moderador" },
+    });
+
+    if (!role) {
+      return response.status(403).json({ message: "Apenas moderadores podem editar anotações" });
+    }
+
+    const note = await Note.findOne({
+      where: { brainstormingId, userStoryId, cardCode },
+    });
+    if (!note) {
+      return response.status(404).json({ message: "Anotação não encontrada para esta carta" });
+    }
+
+    await note.update({ text });
+
+    return response.status(200).json(note);
+    } catch {
+      return response.status(500).json({ message: "Internal server error"});
     }
   },
 
@@ -603,5 +640,5 @@ module.exports = {
     } catch {
       return response.status(500).json({ message: "Internal server error"});  
     }
-  }
+  },
 };
