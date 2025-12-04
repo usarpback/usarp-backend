@@ -884,6 +884,33 @@ components:
         userStoryId:
           type: string
           format: uuid
+    
+    Note:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        brainstormingId:
+          type: string
+          format: uuid
+        userStoryId:
+          type: string
+          format: uuid
+        cardCode:
+          type: string
+        text:
+          type: string
+        authorId:
+          type: string
+          format: uuid
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
 
   securitySchemes:
     bearerAuth:
@@ -3244,3 +3271,105 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+  
+  /brainstormings/{brainstormingId}/user-stories/{userStoryId}/cards/{cardCode}/notes:
+    get:
+      tags:
+        - Brainstorming
+      summary: Obter anotação da carta em uma user story de um brainstorming
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: brainstormingId
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: ID do brainstorming
+        - in: path
+          name: userStoryId
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: ID da user story associada ao brainstorming
+        - in: path
+          name: cardCode
+          required: true
+          schema:
+            type: string
+          description: Código da carta recomendada (ex. M1-R1)
+      responses:
+        "200":
+          description: Anotação encontrada (ou null se não existir)
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: "#/components/schemas/Note"
+                  - type: "null"
+        "403":
+          description: Usuário não é membro do brainstorming
+        "500":
+          description: Erro interno do servidor
+
+  /brainstormings/{brainstormingId}/user-stories/{userStoryId}/cards/{cardCode}/note:
+    put:
+      tags:
+        - Brainstorming
+      summary: Criar ou atualizar anotação da carta em uma user story de um brainstorming
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: brainstormingId
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: ID do brainstorming
+        - in: path
+          name: userStoryId
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: ID da user story associada ao brainstorming
+        - in: path
+          name: cardCode
+          required: true
+          schema:
+            type: string
+          description: Código da carta recomendada (ex. M1-R1)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - text
+              properties:
+                text:
+                  type: string
+                  description: Texto da anotação
+      responses:
+        "200":
+          description: Anotação atualizada com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Note"
+        "201":
+          description: Anotação criada com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Note"
+        "400":
+          description: Requisição inválida (texto ausente)
+        "403":
+          description: Usuário não é moderador do brainstorming
+        "500":
+          description: Erro interno do servidor

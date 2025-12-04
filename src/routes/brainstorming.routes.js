@@ -52,5 +52,14 @@ BrainstormingRoutes.post(
   BrainstormingController.startBrainstormingSession,
 );
 
+BrainstormingRoutes.put(
+  "brainstormings/:brainstormingId/user-stories/:userStoryId/cards/:cardCode/notes",
+  BrainstormingController.createNote,
+);
+
+BrainstormingRoutes.get(
+  "brainstormings/:brainstormingId/user-stories/:userStoryId/cards/:cardCode/notes",
+  BrainstormingController.getNote,
+);
 
 module.exports = BrainstormingRoutes;
