@@ -540,7 +540,7 @@ module.exports = {
       if (!project) {
         return response.status(404).json({ message: "Projeto não encontrado" });
       }
-
+      
       if (project.creatorId !== userId) {
         return response.status(403).json({ message: "Apenas o criador do projeto pode remover membros" });
       }
@@ -671,47 +671,56 @@ module.exports = {
 
   async updateProjectMemberRole(request, response) {
     try {
-      const projectId = request.params.id;
-      const memberId = request.params.memberId;
-      const { memberEmail, roleInProject } = request.body;
-      const userId = request.userId;
+      const id = request.params.id;
+      const memberIdUser = request.params.memberId; 
+      const { roleInProject } = request.body;
+      const userId = request.userId; 
 
-      const project = await Project.findByPk(projectId);
-
+      const project = await Project.findByPk(id);
       if (!project) {
         return response.status(404).json({ message: "Projeto não encontrado" });
       }
 
-      if (project.creatorId !== userId) {
-        return response.status(403).json({ message: "Apenas o criador do projeto pode atualizar funções de membros" });
+      const requesterRelation = await ProjectUser.findOne({
+        where: { projectId: id, memberId: userId },
+      });
+
+      const isOwner = project.creatorId === userId;
+      const isModerator = requesterRelation && requesterRelation.roleInProject === "Moderador";
+
+      if (!isOwner && !isModerator) {
+        return response.status(403).json({ 
+            message: "Permissão negada. Apenas o Proprietário ou Moderadores podem alterar permissões." 
+        });
       }
 
-      let projectMember;
-      if (memberId) {
-        projectMember = await ProjectUser.findOne({ where: { projectId, memberId } });
-      } else if (memberEmail) {
-        projectMember = await ProjectUser.findOne({ where: { projectId, memberEmail } });
-      } else {
-        return response.status(400).json({ message: "memberId or memberEmail is required." });
+      if (isModerator) {
+        if (memberIdUser === userId) {
+             return response.status(403).json({ message: "Moderadores não podem alterar a própria permissão." });
+        }
+        if (memberIdUser === project.creatorId) {
+             return response.status(403).json({ message: "Moderadores não podem alterar a permissão do Proprietário do projeto." });
+        }
       }
+
+      const projectMember = await ProjectUser.findOne({ 
+        where: { projectId: id, memberId: memberIdUser } 
+      });
 
       if (!projectMember) {
         return response.status(404).json({ message: "Membro do projeto não encontrado" });
-      }
-
-      if (roleInProject === "Moderador") {
-        return response.status(400).json({ message: "Função inválida. Apenas 'Participante' pode ser atribuída." });
       }
 
       projectMember.roleInProject = roleInProject;
       await projectMember.save();
 
       return response.status(200).json({ message: "Função do membro atualizada com sucesso" });
+
     } catch (error) {
       console.error(error);
       return response.status(500).json({ message: error.message });
     }
-  },
+},
 
   async listProjects (request, response) {
     try {
