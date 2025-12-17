@@ -685,7 +685,26 @@ module.exports = {
       if (orderedUserStoriesID.length > 3){
         return response.status(403).json({message: "O sistema permite a ordenação manual de no máximo 3 histórias por vez."})
       }
+      const linkedStories = await BrainstormingUserStories.findAll({
+        where: { brainstormingId },
+        attributes: ['userStoryId']
+      });
 
+      if (linkedStories.length === 0) {
+        return response.status(400).json({ 
+            message: "Não existem histórias vinculadas a esta sessão. Selecione histórias antes de ordenar." 
+        });
+      }
+
+      const linkedIds = linkedStories.map(s => s.userStoryId);
+
+      const allIdsAreValid = orderedUserStoriesID.every(id => linkedIds.includes(id));
+
+      if (!allIdsAreValid) {
+        return response.status(400).json({ 
+            message: "Uma ou mais histórias enviadas não estão vinculadas a esta sessão de brainstorming." 
+        });
+      }
       const sequelize = BrainstormingUserStories.sequelize;
       await sequelize.transaction(async (t) => {
         await BrainstormingUserStories.update(
