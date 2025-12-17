@@ -388,7 +388,7 @@ module.exports = {
     const userId = request.userId;
 
     const t = await sequelize.transaction({
-      isolationLevel: sequelize.Transaction.ISOLATION_LEVELS.SERIALIZABLE,
+      isolationLevel: Sequelize.Transaction.ISOLATION_LEVELS.SERIALIZABLE,
     });
 
     try {
@@ -724,14 +724,14 @@ module.exports = {
       })
       const creatorProjects = await Project.findAll({
         where: { creatorId: userId},
-        attributes: ["projectId"]
+        attributes: ["id"]
       })
 
       const memberProjectsIds = projectMemberships.map(
         membership => membership.projectId
       );
       const creatorProjectsIds = creatorProjects.map(
-        projects => projects.projectId
+        projects => projects.id
       )
       const allProjectsIds = Array.from(new Set([...memberProjectsIds, ...creatorProjectsIds]))
 
@@ -754,7 +754,7 @@ module.exports = {
     };
 
     const order = [];
-    if (orderBy && (orderBy === 'createdAt' || orderBy === 'updateAt')){
+    if (orderBy && (orderBy === 'createdAt' || orderBy === 'updatedAt')){
       order.push([
         orderBy,
         orderDirection && orderDirection.toUpperCase() === 'DESC' ? 'DESC' : 'ASC',
