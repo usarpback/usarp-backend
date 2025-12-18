@@ -6,6 +6,8 @@ const User = require('../models/user.model');
 const Note = require('../models/notes.model');
 const { ValidationError } = require("sequelize");
 const BrainstormingUserStories = require("../models/brainstormingUserStories.model");
+const crypto = require("crypto");
+const { title } = require("process");
 
 module.exports = {
 
@@ -725,6 +727,136 @@ module.exports = {
 
     }catch (error) {
         return response.status(500).json({ message: "Erro ao ordenar histórias.", error: error.message });
+    }
+  },
+  async createOrGetShareLink (request, response) {
+    try {
+      const { brainstormingId } = request.params;
+      const { roleOnacess } = request.body;
+      const userId = request.userId;
+
+      const brainstorming = await Brainstorming.findByPk(brainstormingId);
+      if (!brainstorming) {
+        return response.status(404).json({ message: "Brainstorming não encontrado"});
+      }
+
+      const role = await BrainstormingUserRole.findOne({
+        where: { userId, brainstormingId, roleInBrainstorming: "Moderador" },
+      });
+
+      if (!role) {
+        return response.status(403).json({ message: "Apenas moderadores podem gerar o link de compartilhamento"});
+      }
+
+      if (roleOnacess) {
+        if (!["Moderador", "Participante"].includes(roleOnacess)) {
+          return response.status(400).json({ message: "Papel inválido"})
+        }
+        brainstorming.shareRoleOnAcess = roleOnacess;
+      }
+
+      if (!brainstorming.shareToken) {
+        brainstorming.shareToken = crypto.randomBytes(24).toString("hex");
+      }
+
+      await brainstorming.save();
+
+      const baseUrl = process.env.FRONTEND_BASE_URL || "https://app.usarp.com";
+      const shareUrl = `${baseUrl}/brainstorming/shared/${brainstorming.shareToken}`;
+
+      return response.status(200).json({
+        brainstormingId: brainstorming.id,
+        title: brainstorming.brainstormingTitle,
+        roleOnacess: brainstorming.shareRoleOnAcess,
+        shareUrl,
+      })
+    } catch (error) {
+      return response.status(500).json({ message: "Internal server error"});
+    }
+  },
+
+  async resolveShareLink (request, response) {
+    try {
+      const { token } = request.params;
+      const brainstorming = await brainstorming.findOne({
+        where: { shareToken: token },
+        attributes: ["id","brainstormingTittle", "shareRoleOnAcess"],
+      });
+      
+      if (!brainstorming) {
+        return response.status(404).json({ message: "Link inváldo ou brainstorming não encontrado"});
+      }
+
+      return response.status(200).json({
+        brainstormingId: brainstorming.id,
+        title: brainstorming.brainstormingTitle,
+        roleOnacess: brainstorming.shareRoleOnAcess,
+      });
+
+    } catch (error) {
+      return response.status(500).json({ message: "Internal server error"});
+    }
+  },
+
+  async accessSharedBrainstorming(request, response) {
+    try {
+      const { token } = request.params;
+      const { name, email } = request.body;
+
+      if (!name || !email) {
+        return response.status(400).json({
+          message: "Nome e e-mail são obrigatórios para acessar o brainstorming",
+        });
+      }
+
+      const brainstorming = await Brainstorming.findOne({
+        where: { shareToken: token },
+      });
+
+      if (!brainstorming) {
+        return response.status(404).json({ message: "Link inválido ou brainstorming não encontrado" });
+      }
+
+      let user = await User.findOne({ where: { email } });
+
+      if (!user) {
+        user = await User.create({
+          fullName: name,
+          email,
+          gender: "Prefiro não informar",
+          birthdate: "01/01/2000",
+          profile: "Profissional da Indústria",
+          organization: "Convidado",
+          password: "Temp123!",
+        });
+      } else if (!user.fullName) {
+        await user.update({ fullName: name });
+      }
+
+      const roleToApply = brainstorming.shareRoleOnAccess;
+
+      const [userRole, created] = await BrainstormingUserRole.findOrCreate({
+        where: {
+          userId: user.id,
+          brainstormingId: brainstorming.id,
+        },
+        defaults: {
+          roleInBrainstorming: roleToApply,
+        },
+      });
+
+      if (!created && userRole.roleInBrainstorming !== roleToApply) {
+        await userRole.update({ roleInBrainstorming: roleToApply });
+      }
+
+      return response.status(200).json({
+        message: "Acesso concedido ao brainstorming",
+        brainstormingId: brainstorming.id,
+        userId: user.id,
+        roleInBrainstorming: roleToApply,
+      });
+    } catch (error) {
+      return response.status(500).json({ message: "Internal server error" });
     }
   },
 };

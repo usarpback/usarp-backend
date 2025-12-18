@@ -129,6 +129,16 @@ class Brainstorming extends Model {
             },
           },
         },
+        shareToken: {
+          type: DataTypes.STRING,
+          allowNull: true,
+          unique: true,
+        },
+        shareRoleOnAccess: {
+          type: DataTypes.ENUM("Moderador", "Participante"),
+          allowNull: false,
+          defaultValue: "Participante",
+        },
       },
       {
         sequelize,

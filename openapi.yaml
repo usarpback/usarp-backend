@@ -3472,3 +3472,148 @@ paths:
           description: Anotação não encontrada para esta carta
         "500":
           description: Erro interno do servidor
+
+  /brainstorming/{brainstormingId}/share-link:
+    post:
+      tags:
+        - Brainstorming
+      summary: Gerar ou obter link de compartilhamento de um brainstorming
+      description: Apenas moderadores podem gerar/consultar o link. O link é único e permanente por brainstorming.
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: brainstormingId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                roleOnAccess:
+                  type: string
+                  enum:
+                    - Moderador
+                    - Participante
+                  description: Papel que convidados ganharão ao acessar o link
+      responses:
+        "200":
+          description: Link de compartilhamento retornado com sucesso
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  brainstormingId:
+                    type: string
+                    format: uuid
+                  title:
+                    type: string
+                  roleOnAccess:
+                    type: string
+                    enum:
+                      - Moderador
+                      - Participante
+                  shareUrl:
+                    type: string
+        "403":
+          description: Usuário não é moderador do brainstorming
+        "404":
+          description: Brainstorming não encontrado
+        "500":
+          description: Erro interno do servidor
+
+  /brainstorming/shared/{token}:
+    get:
+      tags:
+        - Brainstorming
+      summary: Resolver link de compartilhamento de brainstorming
+      description: Retorna metadados do brainstorming associado ao token, usado antes do modal de identificação.
+      parameters:
+        - in: path
+          name: token
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Link válido, brainstorming encontrado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  brainstormingId:
+                    type: string
+                    format: uuid
+                  title:
+                    type: string
+                  roleOnAccess:
+                    type: string
+                    enum:
+                      - Moderador
+                      - Participante
+        "404":
+          description: Link inválido ou brainstorming não encontrado
+        "500":
+          description: Erro interno do servidor
+
+  /brainstorming/shared/{token}/access:
+    post:
+      tags:
+        - Brainstorming
+      summary: Permitir acesso a um brainstorming via link de compartilhamento
+      description: Convidado informa nome e e-mail; o sistema cria/associa usuário e papel no brainstorming.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+                - email
+              properties:
+                name:
+                  type: string
+                email:
+                  type: string
+                  format: email
+      parameters:
+        - in: path
+          name: token
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Acesso concedido ao brainstorming
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  brainstormingId:
+                    type: string
+                    format: uuid
+                  userId:
+                    type: string
+                    format: uuid
+                  roleInBrainstorming:
+                    type: string
+                    enum:
+                      - Moderador
+                      - Participante
+        "400":
+          description: Nome ou e-mail ausentes
+        "404":
+          description: Link inválido ou brainstorming não encontrado
+        "500":
+          description: Erro interno do servidor

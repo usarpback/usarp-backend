@@ -53,18 +53,33 @@ BrainstormingRoutes.post(
 );
 
 BrainstormingRoutes.post(
-  "brainstormings/:brainstormingId/user-stories/:userStoryId/cards/:cardCode/notes",
+  "/brainstormings/:brainstormingId/user-stories/:userStoryId/cards/:cardCode/notes",
   BrainstormingController.createNote,
 );
 
 BrainstormingRoutes.put(
-  "brainstormings/:brainstormingId/user-stories/:userStoryId/cards/:cardCode/notes",
+  "/brainstormings/:brainstormingId/user-stories/:userStoryId/cards/:cardCode/notes",
   BrainstormingController.updateNote,
 );
 
 BrainstormingRoutes.get(
-  "brainstormings/:brainstormingId/user-stories/:userStoryId/cards/:cardCode/notes",
+  "/brainstormings/:brainstormingId/user-stories/:userStoryId/cards/:cardCode/notes",
   BrainstormingController.getNote,
+);
+
+BrainstormingRoutes.post(
+  "/brainstorming/:brainstormingId/share-link",
+  BrainstormingController.createOrGetShareLink,
+);
+
+BrainstormingRoutes.get(
+  "/brainstorming/shared/:token",
+  BrainstormingController.resolveShareLink,
+);
+
+BrainstormingRoutes.post(
+  "/brainstorming/shared/:token/acess",
+  BrainstormingController.accessSharedBrainstorming,
 );
 
 module.exports = BrainstormingRoutes;
