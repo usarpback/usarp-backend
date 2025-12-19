@@ -885,6 +885,18 @@ components:
           type: string
           format: uuid
     
+    UpdateUserStoriesOrderRequest:
+      type: object
+      properties:
+        orderedUserStoriesID:
+          type: array
+          items:
+            type: string
+            format: uuid
+          description: Array com os IDs das histórias de usuário na ordem desejada (máximo 3 histórias por vez)
+      required:
+        - orderedUserStoriesID
+    
     Note:
       type: object
       properties:
@@ -3323,6 +3335,57 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
   
+  /brainstorming/{brainstormingId}/user-stories-order:
+    patch:
+      tags:
+        - Brainstorming
+      summary: Atualizar ordem das histórias de usuário em um brainstorming
+      description: >
+        Atualiza a ordem de exibição das histórias de usuário em uma sessão de brainstorming.
+        Apenas usuários com papel de Moderador podem executar esta operação.
+        O sistema permite ordenação manual de no máximo 3 histórias por vez.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: brainstormingId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: ID do brainstorming
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateUserStoriesOrderRequest'
+      responses:
+        "200":
+          description: Ordem das histórias atualizada com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+        "400":
+          description: Requisição inválida ou histórias não vinculadas
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "403":
+          description: Usuário não tem permissão (não é Moderador) ou limite de 3 histórias excedido
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedResponse'
+        "500":
+          description: Erro interno do servidor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
   /brainstormings/{brainstormingId}/user-stories/{userStoryId}/cards/{cardCode}/notes:
     get:
       tags:

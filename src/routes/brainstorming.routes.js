@@ -67,4 +67,9 @@ BrainstormingRoutes.get(
   BrainstormingController.getNote,
 );
 
+BrainstormingRoutes.patch(
+  "/:brainstormingId/user-stories-order",
+  BrainstormingController.updateBrainstormingUserStoryOrder
+);
+
 module.exports = BrainstormingRoutes;
