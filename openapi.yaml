@@ -3617,3 +3617,87 @@ paths:
           description: Link inválido ou brainstorming não encontrado
         "500":
           description: Erro interno do servidor
+
+  /brainstorming/{brainstormingId}/invitations/brainstorming-members:
+      post:
+        tags:
+          - Brainstorming
+        summary: Enviar convites por e-mail para membros de um brainstorming
+        description: >
+          Apenas moderadores do brainstorming podem enviar convites por e-mail.
+          Os destinatários devem ser usuários que já fazem parte do brainstorming.
+        security:
+          - bearerAuth: []
+        parameters:
+          - in: path
+            name: brainstormingId
+            required: true
+            schema:
+              type: string
+              format: uuid
+            description: ID da sessão de brainstorming
+        requestBody:
+          required: true
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - memberIds
+                  - roleOnAccess
+                properties:
+                  memberIds:
+                    type: array
+                    description: Lista de IDs de usuários que já fazem parte do brainstorming
+                    items:
+                      type: string
+                      format: uuid
+                    example:
+                      - "e7b8c9d2-1a2b-4c3d-9f0a-123456789abc"
+                      - "a1b2c3d4-1a2b-4c3d-9f0a-abcdef123456"
+                  roleOnAccess:
+                    type: string
+                    description: Papel que os membros convidados terão na sessão
+                    enum:
+                      - Participante
+                      - Moderador
+                    example: "Participante"
+        responses:
+          "200":
+            description: Convites enviados com sucesso
+            content:
+              application/json:
+                schema:
+                  type: object
+                  properties:
+                    message:
+                      type: string
+                      example: "Convites enviados para membros do brainstorming"
+                    count:
+                      type: integer
+                      description: Quantidade de convites enviados
+                      example: 3
+                    results:
+                      type: array
+                      items:
+                        type: object
+                        properties:
+                          userId:
+                            type: string
+                            format: uuid
+                          email:
+                            type: string
+                            format: email
+                          roleInBrainstorming:
+                            type: string
+                            enum:
+                              - Participante
+                              - Moderador
+          "400":
+            description: Requisição inválida (lista vazia ou roleOnAccess inválido)
+          "403":
+            description: Usuário autenticado não é moderador do brainstorming
+          "404":
+            description: Brainstorming não encontrado
+          "500":
+            description: Erro interno do servidor

@@ -8,6 +8,7 @@ const { ValidationError } = require("sequelize");
 const BrainstormingUserStories = require("../models/brainstormingUserStories.model");
 const crypto = require("crypto");
 const { title } = require("process");
+const mailer = require("../config/mailer");
 
 module.exports = {
 
@@ -859,4 +860,86 @@ module.exports = {
       return response.status(500).json({ message: "Internal server error" });
     }
   },
+
+  async sendEmailInvitationToBrainstormingMembers (request, response) {
+    try {
+      const { brainstormingId } = request.params;
+      const { memberIds, roleOnAccess } = request.body;
+      const userId = request.userId;
+
+      if (!Array.isArray(memberIds) || memberIds.length === 0) {
+        return response.status(400).json({ message: "memberIds deve ser um array com pelo menos um id" });
+      }
+
+      if (!["Participante", "Moderador"].includes(roleOnAccess)) {
+        return response.status(400).json({ message: "roleOnAccess inválido" });
+      }
+
+      const brainstorming = await Brainstorming.findByPk(brainstormingId);
+      if (!brainstorming) {
+        return response.status(404).json({ message: "Brainstorming não encontrado" });
+      }
+
+      const senderRole = await BrainstormingUserRole.findOne({
+        where: { userId, brainstormingId, roleInBrainstorming: "Moderador" },
+      });
+
+      if (!senderRole) {
+        return response.status(403).json({ message: "Apenas moderadores podem enviar convites" });
+      }
+
+      const senderUser = await User.findByPk(userId);
+
+      if (!brainstorming.shareToken) {
+        brainstorming.shareToken = crypto.randomBytes(24).toString("hex");
+      }
+      brainstorming.shareRoleOnAccess = roleOnAccess;
+      await brainstorming.save();
+
+      const baseUrl = process.env.FRONTEND_BASE_URL || "https://app.usarp.com";
+      const shareUrl = `${baseUrl}/brainstormings/shared/${brainstorming.shareToken}`;
+
+      const memberRoles = await BrainstormingUserRole.findAll({
+        where: {
+          brainstormingId,
+          userId: memberIds,
+        },
+        include: [{ model: User, as: "user" }],
+      });
+
+      const results = [];
+
+      for (const mr of memberRoles) {
+        const memberUser = mr.user;
+
+        if (mr.roleInBrainstorming !== roleOnAccess) {
+          await mr.update({ roleInBrainstorming: roleOnAccess });
+        }
+
+        await emailService.sendInvitationToProjectMember({
+          to: memberUser.email,
+          invitedUserName: memberUser.fullName,
+          projectName: projectName, 
+          brainstormingTitle: brainstorming.brainstormingTitle,
+          invitedByName: senderUser?.fullName || "Moderador",
+          roleOnAccess,
+          shareUrl,
+        });
+
+        results.push({
+          userId: memberUser.id,
+          email: memberUser.email,
+          roleInBrainstorming: roleOnAccess,
+        });
+      }
+
+      return response.status(200).json({
+        message: "Convites enviados para membros do brainstorming",
+        count: results.length,
+        results,
+      });
+    } catch (error) {
+      return response.status(500).json({ message: "Internal server error"});
+    }
+  }
 };

@@ -82,4 +82,9 @@ BrainstormingRoutes.post(
   BrainstormingController.accessSharedBrainstorming,
 );
 
+BrainstormingRoutes.post(
+  "/brainstorming/:brainstormingId/invitations/brainstorming-members",
+  BrainstormingController.sendEmailInvitationToBrainstormingMembers,
+);
+
 module.exports = BrainstormingRoutes;

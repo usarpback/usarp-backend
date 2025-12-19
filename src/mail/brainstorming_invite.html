@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Convite para Brainstorming - USARP Tool</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f4f4f7;
+      color: #51545e;
+      margin: 0;
+      padding: 0;
+    }
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+      padding: 20px;
+      background-color: #ffffff;
+      border-radius: 8px;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    }
+    .header {
+      text-align: center;
+      padding: 10px 0;
+      background-color: #6c63ff;
+      color: #ffffff;
+      border-radius: 8px 8px 0 0;
+    }
+    .content {
+      padding: 20px;
+    }
+    .content p {
+      font-size: 16px;
+      line-height: 1.5;
+      margin: 20px 0;
+    }
+    .button {
+      display: block;
+      width: 220px;
+      margin: 20px auto;
+      padding: 10px 20px;
+      background-color: #6c63ff;
+      color: #ffffff;
+      text-align: center;
+      text-decoration: none;
+      border-radius: 5px;
+      font-size: 16px;
+    }
+    .project-info {
+      background-color: #f8f9fa;
+      padding: 15px;
+      border-radius: 5px;
+      border-left: 4px solid #6c63ff;
+      margin: 20px 0;
+    }
+    .project-info h3 {
+      margin: 0 0 10px 0;
+      color: #6c63ff;
+    }
+    .badge-role {
+      display: inline-block;
+      padding: 4px 8px;
+      border-radius: 4px;
+      background-color: #e8f5e9;
+      color: #2e7d32;
+      font-size: 13px;
+      font-weight: bold;
+    }
+    .footer {
+      text-align: center;
+      padding: 10px 0;
+      font-size: 12px;
+      color: #888888;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>Convite para Brainstorming</h1>
+    </div>
+    <div class="content">
+      <p>Olá <strong>{{memberName}}</strong>,</p>
+
+      <p>
+        <strong>{{inviterName}}</strong> está convidando você para participar do
+        brainstorming <strong>"{{brainstormingTitle}}"</strong> no projeto
+        <strong>"{{projectName}}"</strong>.
+      </p>
+
+      <p>
+        Seu papel neste brainstorming será:
+        <span class="badge-role">{{roleOnAccess}}</span>
+      </p>
+
+      <div class="project-info">
+        <h3>Acessar brainstorming</h3>
+        <p>
+          Clique no botão abaixo para acessar a sessão de brainstorming. Ao entrar,
+          você poderá colaborar com ideias, registrar anotações e acompanhar as discussões.
+        </p>
+        <a href="{{brainstormingLink}}" target="_blank" class="button">
+          Abrir Brainstorming
+        </a>
+      </div>
+
+      <p>
+        Se você tiver qualquer dúvida sobre este convite ou sobre o brainstorming,
+        entre em contato com <strong>{{inviterName}}</strong>.
+      </p>
+
+      <p>
+        Atenciosamente,<br />
+        <strong>Equipe USARP Tool</strong>
+      </p>
+    </div>
+    <div class="footer">
+      <p>&copy; 2025 USARP Tool - Brainstorming e Requisitos de Usabilidade</p>
+    </div>
+  </div>
+</body>
+</html>
