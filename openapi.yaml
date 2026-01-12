@@ -3093,6 +3093,102 @@ paths:
                 $ref: "#/components/schemas/MessageResponse"
 
   /brainstorming/{brainstormingId}:
+    put:
+      tags:
+        - Brainstorming
+      summary: Atualizar uma sessão de brainstorming
+      description: >
+        Atualiza informações básicas de uma sessão de brainstorming (título, data, hora) 
+        e gerencia as histórias de usuário associadas. Apenas o criador ou usuários com papel 
+        de Moderador podem atualizar. As histórias de usuário devem pertencer ao projeto da sessão.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: brainstormingId
+          in: path
+          required: true
+          description: UUID do brainstorming a ser atualizado
+          schema:
+            type: string
+            format: uuid
+            example: "br-123e4567-e89b-12d3-a456-426614174000"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                brainstormingTitle:
+                  type: string
+                  description: Novo título da sessão de brainstorming
+                  example: "Sessão atualizada - Login e Autenticação"
+                brainstormingDate:
+                  type: string
+                  description: Nova data da sessão (formato YYYY-MM-DD)
+                  example: "2025-11-15"
+                brainstormingTime:
+                  type: string
+                  description: Novo horário da sessão (formato HH:mm)
+                  example: "15:30"
+                userStories:
+                  type: array
+                  description: Array de UUIDs das histórias de usuário a serem associadas (substitui as anteriores)
+                  items:
+                    type: string
+                    format: uuid
+                  example:
+                    - "us-123e4567-e89b-12d3-a456-426614174000"
+                    - "us-987e6543-e21b-12d3-a456-426614174999"
+      responses:
+        "200":
+          description: Brainstorming atualizado com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+              example:
+                message: "Brainstorming atualizado com sucesso."
+        "400":
+          description: Histórias de usuário não pertencem ao projeto desta sessão
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                message: "Uma ou mais histórias de usuário não pertencem ao projeto desta sessão."
+        "403":
+          description: Usuário não tem permissão para editar esta sessão
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                message: "Você não tem permissão para editar esta sessão."
+        "404":
+          description: Sessão de brainstorming não encontrada
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                message: "Sessão de brainstorming não encontrada."
+        "401":
+          description: Token ausente ou inválido
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UnauthorizedResponse"
+        "500":
+          description: Erro interno do servidor
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                message: "Erro ao atualizar brainstorming."
+                error: "Detalhes do erro"
+    
     delete:
       tags:
         - Brainstorming

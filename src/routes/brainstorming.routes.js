@@ -72,4 +72,9 @@ BrainstormingRoutes.patch(
   BrainstormingController.updateBrainstormingUserStoryOrder
 );
 
+BrainstormingRoutes.put(
+  "/:id",
+  BrainstormingController.updateBrainstorming
+);
+
 module.exports = BrainstormingRoutes;

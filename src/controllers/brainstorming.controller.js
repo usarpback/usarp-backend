@@ -727,4 +727,97 @@ module.exports = {
         return response.status(500).json({ message: "Erro ao ordenar histórias.", error: error.message });
     }
   },
+  async updateBrainstorming(request, response) {
+    const { id } = request.params;
+    const { brainstormingTitle, brainstormingDate, brainstormingTime, userStories } = request.body;
+    const requestingUserId = request.userId;
+
+    const transaction = await Brainstorming.sequelize.transaction();
+
+    try {
+      const brainstorming = await Brainstorming.findByPk(id);
+      
+      if (!brainstorming) {
+        await transaction.rollback();
+        return response.status(404).json({ message: "Sessão de brainstorming não encontrada." });
+      }
+
+      const isCreator = brainstorming.creatorId === requestingUserId;
+      
+      const userRole = await BrainstormingUserRole.findOne({
+        where: { brainstormingId: id, userId: requestingUserId }
+      });
+      const isModerator = userRole && userRole.role === 'Moderador';
+
+      if (!isCreator && !isModerator) {
+        await transaction.rollback();
+        return response.status(403).json({ 
+            message: "Você não tem permissão para editar esta sessão." 
+        });
+      }
+
+      await brainstorming.update({
+        brainstormingTitle,
+        brainstormingDate,
+        brainstormingTime
+      }, { transaction });
+
+      if (userStories && Array.isArray(userStories)) {
+        
+        const validStories = await UserStories.count({
+            where: {
+                id: userStories,
+                projectId: brainstorming.projectId
+            },
+            transaction
+        });
+
+        if (validStories !== userStories.length) {
+            await transaction.rollback();
+            return response.status(400).json({ 
+                message: "Uma ou mais histórias de usuário não pertencem ao projeto desta sessão." 
+            });
+        }
+
+        const currentAssociations = await BrainstormingUserStories.findAll({
+            where: { brainstormingId: id },
+            attributes: ['userStoryId'],
+            transaction
+        });
+        const currentIds = currentAssociations.map(a => a.userStoryId);
+
+        const toRemove = currentIds.filter(cid => !userStories.includes(cid));
+        const toAdd = userStories.filter(uid => !currentIds.includes(uid));
+
+        if (toRemove.length > 0) {
+            await BrainstormingUserStories.destroy({
+                where: {
+                    brainstormingId: id,
+                    userStoryId: toRemove
+                },
+                transaction
+            });
+        }
+
+        if (toAdd.length > 0) {
+            const newAssociations = toAdd.map(usId => ({
+                brainstormingId: id,
+                userStoryId: usId,
+                order: null, 
+                checklist: null
+            }));
+            
+            await BrainstormingUserStories.bulkCreate(newAssociations, { transaction });
+        }
+      }
+
+      await transaction.commit();
+      return response.status(200).json({ message: "Brainstorming atualizado com sucesso." });
+
+    } catch (error) {
+      await transaction.rollback();
+      console.error(error);
+      return response.status(500).json({ message: "Erro ao atualizar brainstorming.", error: error.message });
+    }
+  },
 };
