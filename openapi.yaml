@@ -3631,3 +3631,87 @@ paths:
           description: Anotação não encontrada para esta carta
         "500":
           description: Erro interno do servidor
+
+  /brainstorming/{brainstormingId}/export:
+    get:
+      tags:
+        - Brainstorming
+      summary: Exportar resultados da sessão de brainstorming
+      description: >
+        Exporta os resultados completos de uma sessão de brainstorming em formato PDF ou Word.
+        Inclui informações da sessão, participantes, histórias de usuário trabalhadas,
+        checklists marcados e cards recomendados. Apenas membros da sessão podem exportar.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: brainstormingId
+          in: path
+          required: true
+          description: UUID do brainstorming a ser exportado
+          schema:
+            type: string
+            format: uuid
+            example: "br-123e4567-e89b-12d3-a456-426614174000"
+        - name: format
+          in: query
+          required: true
+          description: Formato do arquivo de exportação
+          schema:
+            type: string
+            enum:
+              - pdf
+              - word
+            example: "pdf"
+      responses:
+        "200":
+          description: Arquivo gerado com sucesso
+          content:
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+              example: <binary PDF data>
+            application/vnd.openxmlformats-officedocument.wordprocessingml.document:
+              schema:
+                type: string
+                format: binary
+              example: <binary Word document data>
+        "400":
+          description: Formato inválido (deve ser 'pdf' ou 'word')
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                message: "Formato inválido. Use 'pdf' ou 'word'."
+        "403":
+          description: Usuário não tem permissão para acessar este brainstorming
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                message: "Você não tem permissão para acessar este brainstorming."
+        "404":
+          description: Brainstorming não encontrado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                message: "Brainstorming não encontrado."
+        "401":
+          description: Token ausente ou inválido
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UnauthorizedResponse"
+        "500":
+          description: Erro ao exportar arquivo
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                message: "Erro ao exportar arquivo."
+                error: "Detalhes do erro"
