@@ -77,4 +77,14 @@ BrainstormingRoutes.put(
   BrainstormingController.updateBrainstorming
 );
 
+BrainstormingRoutes.patch(
+  "/brainstorming/:brainstormingId/members/:memberId/role",
+  BrainstormingController.updateMemberRole,
+);
+
+BrainstormingRoutes.delete(
+  "/brainstorming/:brainstormingId/members/:memberId",
+  BrainstormingController.removeMemberFromBrainstorming,
+);
+
 module.exports = BrainstormingRoutes;

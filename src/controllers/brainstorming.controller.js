@@ -6,6 +6,7 @@ const User = require('../models/user.model');
 const Note = require('../models/notes.model');
 const { ValidationError } = require("sequelize");
 const BrainstormingUserStories = require("../models/brainstormingUserStories.model");
+const mailer = require("../config/mailer");
 
 module.exports = {
 
@@ -818,6 +819,154 @@ module.exports = {
       await transaction.rollback();
       console.error(error);
       return response.status(500).json({ message: "Erro ao atualizar brainstorming.", error: error.message });
+    }
+  },
+
+  async updateMemberRole(request, response) {
+    try {
+      const { brainstormingId, memberId } = request.params;
+      const { newRole } = request.body;
+      const requestingUserId = request.userId;
+
+      if (!['Moderador', 'Participante'].includes(newRole)) {
+        return response.status(400).json({ message: 'Nova permissão inválida.' });
+      }
+
+      const brainstorming = await Brainstorming.findByPk(brainstormingId);
+      if (!brainstorming) {
+        return response.status(404).json({ message: 'Brainstorming não encontrado.' });
+      }
+
+      const project = await Project.findByPk(brainstorming.projectId);
+      if (!project) {
+        return response.status(404).json({ message: 'Projeto associado não encontrado.' });
+      }
+      const projectOwnerId = project.creatorId;
+
+      const requesterRole = await BrainstormingUserRole.findOne({
+        where: { brainstormingId, userId: requestingUserId },
+      });
+
+      if (!requesterRole) {
+        return response.status(403).json({ message: 'Você não participa deste brainstorming.' });
+      }
+
+      if (
+        requesterRole.role === 'Moderador' &&
+        String(memberId) === String(projectOwnerId)
+      ) {
+        return response.status(403).json({
+          message: 'Não é permitido alterar as permissões do proprietário do projeto',
+        });
+      }
+
+      if (
+        requesterRole.role === 'Moderador' &&
+        String(memberId) === String(requestingUserId)
+      ) {
+        return response.status(403).json({
+          message: 'Você não pode alterar suas próprias permissões',
+        });
+      }
+
+      if (!['Moderador'].includes(requesterRole.role) && String(requestingUserId) !== String(projectOwnerId)) {
+        return response.status(403).json({
+          message: 'Você não tem permissão para alterar papéis neste brainstorming.',
+        });
+      }
+
+      const memberRole = await BrainstormingUserRole.findOne({
+        where: { brainstormingId, userId: memberId },
+        include: [{ model: User, as: 'user' }],
+      });
+
+      if (!memberRole) {
+        return response.status(404).json({ message: 'Membro não encontrado neste brainstorming.' });
+      }
+
+      await memberRole.update({ role: newRole });
+
+      await mailer.sendMail({
+        from: "mailusarp@gmail.com",
+        to: projectOwner.email,
+        subject: "Permissão alterada em sessão de brainstorming",
+        template: "brainstormingPermissionChanged",
+        context: {
+          ownerName: projectOwner.fullName,
+          brainstormingTitle: brainstorming.brainstormingTitle,
+          memberName: memberRole.user.fullName,
+          newRole,
+          changedByName: requesterUser.fullName,
+        },
+      });
+
+      return response.status(200).json({
+        message: 'Permissão atualizada com sucesso',
+        userId: memberId,
+        newRole,
+      });
+    } catch (error) {
+      return response.status(500).json({ message: 'Internal server error' });
+    }
+  },
+
+  async removeMemberFromBrainstorming(request, response) {
+    try {
+      const { brainstormingId, memberId } = request.params;
+      const requestingUserId = request.userId;
+
+      const brainstorming = await Brainstorming.findByPk(brainstormingId);
+      if (!brainstorming) {
+        return response
+          .status(404)
+          .json({ message: "Brainstorming não encontrado." });
+      }
+
+      const project = await Project.findByPk(brainstorming.projectId);
+      if (!project) {
+        return response
+          .status(404)
+          .json({ message: "Projeto associado não encontrado." });
+      }
+      const projectOwnerId = project.creatorId;
+
+      const requesterRole = await BrainstormingUserRole.findOne({
+        where: { brainstormingId, userId: requestingUserId },
+      });
+
+      if (!requesterRole) {
+        return response
+          .status(403)
+          .json({ message: "Você não participa deste brainstorming." });
+      }
+
+      if (String(requestingUserId) !== String(projectOwnerId)) {
+        return response.status(403).json({
+          message: "Apenas o proprietário pode remover membros do projeto",
+        });
+      }
+
+      if (String(memberId) === String(projectOwnerId)) {
+        return response.status(403).json({
+          message: "O proprietário não pode ser removido do brainstorming.",
+        });
+      }
+
+      const memberRole = await BrainstormingUserRole.findOne({
+        where: { brainstormingId, userId: memberId },
+      });
+
+      if (!memberRole) {
+        return response.status(404).json({
+          message: "Membro não encontrado neste brainstorming.",
+        });
+      }
+
+      await memberRole.destroy();
+
+      return response.status(200).json({ message: "Usuário removido com sucesso" });
+    } catch (error) {
+      return response.status(500).json({ message: "Internal server error" });
     }
   },
 };

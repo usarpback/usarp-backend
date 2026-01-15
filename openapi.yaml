@@ -3631,3 +3631,165 @@ paths:
           description: Anotação não encontrada para esta carta
         "500":
           description: Erro interno do servidor
+
+  /brainstorming/{brainstormingId}/members/{memberId}/role:
+    patch:
+      tags:
+        - Brainstorming
+      summary: Atualizar permissão de um membro em uma sessão de brainstorming
+      description: >
+        Proprietário do projeto ou Moderadores podem alterar o papel de membros em uma sessão.
+        Moderadores não podem alterar o papel do proprietário nem a própria permissão.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: brainstormingId
+          in: path
+          required: true
+          description: ID da sessão de brainstorming
+          schema:
+            type: string
+            format: uuid
+        - name: memberId
+          in: path
+          required: true
+          description: ID do usuário membro do brainstorming
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - newRole
+              properties:
+                newRole:
+                  type: string
+                  enum:
+                    - Moderador
+                    - Participante
+                  description: Novo papel a ser atribuído ao membro na sessão
+                  example: Moderador
+      responses:
+        "200":
+          description: Permissão atualizada com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+              example:
+                message: "Permissão atualizada com sucesso"
+        "400":
+          description: Nova permissão inválida
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+              example:
+                message: "Nova permissão inválida."
+        "403":
+          description: Ação não permitida (não participa, não é moderador/proprietário, tentou alterar proprietário ou a própria permissão)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+              examples:
+                not_participant:
+                  value:
+                    message: "Você não participa deste brainstorming."
+                change_owner:
+                  value:
+                    message: "Não é permitido alterar as permissões do proprietário do projeto"
+                change_self:
+                  value:
+                    message: "Você não pode alterar suas próprias permissões"
+        "404":
+          description: Brainstorming ou membro não encontrado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+              example:
+                message: "Membro não encontrado neste brainstorming."
+        "500":
+          description: Erro interno do servidor
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+
+  /brainstorming/{brainstormingId}/members/{memberId}:
+    delete:
+      tags:
+        - Brainstorming
+      summary: Remover membro de uma sessão de brainstorming
+      description: >
+        Remove o vínculo de um usuário com a sessão de brainstorming.
+        Apenas o proprietário do projeto pode remover membros; o proprietário não pode ser removido.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: brainstormingId
+          in: path
+          required: true
+          description: ID da sessão de brainstorming
+          schema:
+            type: string
+            format: uuid
+        - name: memberId
+          in: path
+          required: true
+          description: ID do usuário membro a ser removido da sessão
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Usuário removido com sucesso da sessão de brainstorming
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+              example:
+                message: "Usuário removido com sucesso"
+        "403":
+          description: Ação não permitida (não é proprietário ou tentativa de remover o proprietário)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+              examples:
+                not_owner:
+                  value:
+                    message: "Apenas o proprietário pode remover membros do projeto"
+                remove_owner:
+                  value:
+                    message: "O proprietário não pode ser removido do brainstorming."
+        "404":
+          description: Brainstorming ou membro não encontrado na sessão
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+              example:
+                message: "Membro não encontrado neste brainstorming."
+        "401":
+          description: Token ausente ou inválido
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UnauthorizedResponse"
+              example:
+                message: "Token inválido"
+        "500":
+          description: Erro interno do servidor
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+              example:
+                message: "Internal server error"
+
