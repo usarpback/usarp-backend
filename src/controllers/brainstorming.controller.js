@@ -820,4 +820,74 @@ module.exports = {
       return response.status(500).json({ message: "Erro ao atualizar brainstorming.", error: error.message });
     }
   },
+
+  async exportBrainstormingResults(request, response) {
+    const { brainstormingId } = request.params;
+    const { format } = request.query; // pdf ou word
+    const requestingUserId = request.userId;
+
+    try {
+      const brainstorming = await Brainstorming.findByPk(brainstormingId, {
+        include: [{ model: Project, as: 'project' }]
+      });
+
+      if (!brainstorming) {
+        return response.status(404).json({ message: "Brainstorming não encontrado." });
+      }
+
+      const userRole = await BrainstormingUserRole.findOne({
+        where: { brainstormingId, userId: requestingUserId },
+      });
+      if (!userRole) {
+        return response.status(403).json({ message: "Você não tem permissão para acessar este brainstorming." });
+      }
+
+      const participants = await BrainstormingUserRole.findAll({
+        where: { brainstormingId },
+        include: [{ 
+            model: User, 
+            attributes: ['fullName', 'email', 'profile', 'organization'] 
+        }]
+      });
+
+      const sessionData = await BrainstormingUserStories.findAll({
+        where: { brainstormingId },
+        include: [{ 
+          model: UserStories, 
+          attributes: ['userStorieNumber', 'userStoriesTitle', 'card', 'conversation', 'confirmation']
+        }],
+        attributes: ['userStoryId', 'checklist', 'order'] 
+      });
+
+      sessionData.sort((a, b) => {
+        if (a.order !== null && b.order !== null) return a.order - b.order;
+        if (a.order !== null) return -1;
+        if (b.order !== null) return 1;
+        const getNum = (s) => (s ? parseInt(s.match(/\d+/)?.[0] || Infinity, 10) : Infinity);
+        return getNum(a.UserStory?.userStorieNumber) - getNum(b.UserStory?.userStorieNumber);
+      });
+
+      if (format === 'pdf') {
+        const binaryResult = await BrainstormingExportHelper.generatePDF(brainstorming, participants, sessionData);
+        
+        response.setHeader('Content-Type', 'application/pdf');
+        response.setHeader('Content-Disposition', `attachment; filename=Brainstorming-${brainstormingId}.pdf`);
+        return response.send(binaryResult);
+
+      } else if (format === 'word') {
+        const buffer = await BrainstormingExportHelper.generateWord(brainstorming, participants, sessionData);
+
+        response.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+        response.setHeader('Content-Disposition', `attachment; filename=Brainstorming-${brainstormingId}.docx`);
+        return response.send(buffer);
+
+      } else {
+        return response.status(400).json({ message: "Formato inválido. Use 'pdf' ou 'word'." });
+      }
+
+    } catch (error) {
+      console.error("Erro na exportação:", error);
+      return response.status(500).json({ message: "Erro ao exportar arquivo.", error: error.message });
+    }
+  },
 };

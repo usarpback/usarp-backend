@@ -77,4 +77,9 @@ BrainstormingRoutes.put(
   BrainstormingController.updateBrainstorming
 );
 
+BrainstormingRoutes.get(
+  "/:brainstormingId/export",
+  BrainstormingController.exportBrainstormingResults
+);
+
 module.exports = BrainstormingRoutes;
