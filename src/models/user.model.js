@@ -81,10 +81,6 @@ class User extends Model {
             isEmail: {
               msg: "The email is invalid",
             },
-            is: {
-              args: /^[a-zA-Z0-9!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9-]+\.[a-zA-Z]{2,}$/i,
-              msg: "The member email contains invalid characters or format",
-            },
           },
         },
         password: {
