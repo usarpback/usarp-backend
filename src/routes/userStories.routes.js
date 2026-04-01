@@ -4,10 +4,6 @@ const userStoriesController = require("../controllers/userStories.controller");
 
 userStoriesRoutes.post(
   "/userstories/register",
-  userStoriesController.registerListUserStories,
-);
-userStoriesRoutes.post(
-  "/userstories/register",
   userStoriesController.registerUserStories,
 );
 userStoriesRoutes.get(

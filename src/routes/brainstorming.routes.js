@@ -53,17 +53,17 @@ BrainstormingRoutes.post(
 );
 
 BrainstormingRoutes.post(
-  "brainstormings/:brainstormingId/user-stories/:userStoryId/cards/:cardCode/notes",
+  "/brainstormings/:brainstormingId/user-stories/:userStoryId/cards/:cardCode/notes",
   BrainstormingController.createNote,
 );
 
 BrainstormingRoutes.put(
-  "brainstormings/:brainstormingId/user-stories/:userStoryId/cards/:cardCode/notes",
+  "/brainstormings/:brainstormingId/user-stories/:userStoryId/cards/:cardCode/notes",
   BrainstormingController.updateNote,
 );
 
 BrainstormingRoutes.get(
-  "brainstormings/:brainstormingId/user-stories/:userStoryId/cards/:cardCode/notes",
+  "/brainstormings/:brainstormingId/user-stories/:userStoryId/cards/:cardCode/notes",
   BrainstormingController.getNote,
 );
 

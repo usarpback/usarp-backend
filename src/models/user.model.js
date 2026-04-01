@@ -78,7 +78,8 @@ class User extends Model {
             notEmpty: {
               msg: "The 'email' field cannot be empty",
             },
-            isEmail: {
+            is: {
+              args: /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/,
               msg: "The email is invalid",
             },
           },

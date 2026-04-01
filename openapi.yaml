@@ -1224,6 +1224,7 @@ paths:
               example:
                 message: "Internal server error"
 
+  /user/update:
     put:
       tags:
         - Users
@@ -3516,15 +3517,14 @@ paths:
           content:
             application/json:
               schema:
-                oneOf:
+                allOf:
                   - $ref: "#/components/schemas/Note"
-                  - type: "null"
+                nullable: true
         "403":
           description: Usuário não é membro do brainstorming
         "500":
           description: Erro interno do servidor
 
-  /brainstormings/{brainstormingId}/user-stories/{userStoryId}/cards/{cardCode}/note:
     post:
       tags:
         - Brainstorming
@@ -3538,20 +3538,17 @@ paths:
           schema:
             type: string
             format: uuid
-
         - in: path
           name: userStoryId
           required: true
           schema:
             type: string
             format: uuid
-
         - in: path
           name: cardCode
           required: true
           schema:
             type: string
-            
       requestBody:
         required: true
         content:
