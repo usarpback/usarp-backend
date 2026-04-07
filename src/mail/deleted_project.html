@@ -1,9 +1,9 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Password Reset</title>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Projeto Excluído - USARP Tool</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -23,7 +23,7 @@
         .header {
             text-align: center;
             padding: 10px 0;
-            background-color: #6c63ff;
+            background-color: #dc3545;
             color: #ffffff;
             border-radius: 8px 8px 0 0;
         }
@@ -35,17 +35,16 @@
             line-height: 1.5;
             margin: 20px 0;
         }
-        .button {
-            display: block;
-            width: 200px;
-            margin: 20px auto;
-            padding: 10px 20px;
-            background-color: #6c63ff;
-            color: #ffffff;
-            text-align: center;
-            text-decoration: none;
+        .project-info {
+            background-color: #f8d7da;
+            padding: 15px;
             border-radius: 5px;
-            font-size: 16px;
+            border-left: 4px solid #dc3545;
+            margin: 20px 0;
+        }
+        .project-info h3 {
+            margin: 0 0 10px 0;
+            color: #dc3545;
         }
         .footer {
             text-align: center;
@@ -58,17 +57,21 @@
 <body>
     <div class="container">
         <div class="header">
-            <h1>Password Reset Request</h1>
+            <h1>Deleted Project</h1>
         </div>
         <div class="content">
-            <p>Hello,</p>
-            <p>We received a request to reset your password. Click the button below to reset it.</p>
-            <a href="{{ resetLink }}" class="button">Reset Password</a>
-            <p>If you didn't request a password reset, please ignore this email or let us know.</p>
-            <p>Thanks,<br>The USARP Team</p>
+            <p>Hello <strong>{{memberName}}</strong>,</p>
+            <p>We inform you that the project <strong>{{projectName}}</strong>, you were part of has been deleted from the system.</p>
+            <div class="project-info">
+                <h3>Project information</h3>
+                <p><strong>Project's name:</strong> {{projectName}}</p>
+                <p><strong>Deleted By:</strong> {{deletedByName}}</p>
+            </div>
+            <p>If you have any questions about these changes, please contact the project creator.</p>
+            <p>Best regards,<br /><strong>USARP Tool team</strong></p>
         </div>
         <div class="footer">
-            <p>&copy; 2024 USARP</p>
+            <p>&copy; 2025 USARP Tool - Project Management System</p>
         </div>
     </div>
 </body>

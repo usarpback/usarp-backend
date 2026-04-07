@@ -19,6 +19,7 @@ class ProjectUser extends Model {
       as: "memberDetails",
     });
   }
+
   static init(sequelize) {
     super.init(
       {
@@ -40,7 +41,7 @@ class ProjectUser extends Model {
         },
         memberId: {
           type: DataTypes.UUID,
-          allowNull: false,
+          allowNull: true,
           references: {
             model: "users",
             key: "id",
@@ -48,7 +49,7 @@ class ProjectUser extends Model {
         },
         fullName: {
           type: DataTypes.STRING,
-          allowNull: false,
+          allowNull: true,
           onUpdate: "CASCADE",
           onDelete: "CASCADE",
         },
@@ -93,14 +94,38 @@ class ProjectUser extends Model {
             },
           },
         },
+        status: {
+          type: DataTypes.ENUM("Pendente", "Ativo"),
+          allowNull: false,
+          defaultValue: "Pendente",
+          validate: {
+            isIn: {
+              args: [["Pendente", "Ativo"]],
+              msg: "Status must be either 'Pendente' or 'Ativo'",
+            },
+          },
+        },
       },
       {
         sequelize,
         modelName: "ProjectUser",
         tableName: "project_user",
+        validate: {
+          ativoMustHaveMember() {
+            if (this.status === "Ativo") {
+              if (!this.memberId) {
+                throw new Error("memberId cannot be null when status is 'Ativo'.");
+              }
+              if (!this.fullName) {
+                throw new Error("fullName cannot be null when status is 'Ativo'.");
+              }
+            }
+          },
+        },
       },
     );
   }
+
   static addHookBeforeCreate(models) {
     this.addHook("beforeCreate", async (projectUser, options) => {
       if (!projectUser.fullName) {

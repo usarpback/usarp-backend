@@ -24,7 +24,7 @@ module.exports = {
         type: Sequelize.STRING,
         allowNull: false,
       },
-      project: {
+      project_id: {
         type: Sequelize.STRING,
         allowNull: false,
       },
@@ -36,9 +36,10 @@ module.exports = {
         type: Sequelize.STRING,
         allowNull: false,
       },
-      user_stories: {
+      status: {
         type: Sequelize.STRING,
         allowNull: false,
+        defaultValue: "Novo",
       },
       created_at: Sequelize.DATE,
       updated_at: Sequelize.DATE,

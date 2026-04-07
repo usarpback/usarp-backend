@@ -14,12 +14,13 @@ class Project extends Model {
       as: "members",
     });
 
-    this.belongsToMany(models.Project, {
-      through: "BrainstormingProject",
+    this.hasMany(models.UserStories, {
       foreignKey: "projectId",
-      as: "brainstormings",
+      as: "userStories",
+      onDelete: "CASCADE",
     });
   }
+
   static init(sequelize) {
     super.init(
       {
@@ -52,7 +53,7 @@ class Project extends Model {
               if (
                 value &&
                 value.trim().length > 5 &&
-                !/^[\p{L}0-9!@#$%^&*ç()_\-+=\[\]{}\\|:;'"<> ]+$/iu.test(value)
+                !/^[\p{L}0-9!@#$%^&*ç()_\-+=[\]{}\\|:;'"<> ]+$/iu.test(value)
               ) {
                 throw new Error("The project name contains invalid characters");
               }
@@ -77,7 +78,7 @@ class Project extends Model {
               if (
                 value &&
                 value.trim().length > 5 &&
-                !/^[\p{L}0-9!@#$%^&*ç()_\-+=\[\]{}\\|:;'"<> ]+$/iu.test(value)
+                !/^[\p{L}0-9!@#$%^&*ç()_\-+=[\]{}\\|:;'"<> ]+$/iu.test(value)
               ) {
                 throw new Error("The description contains invalid characters");
               }

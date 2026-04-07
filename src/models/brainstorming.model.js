@@ -4,16 +4,24 @@ const { validateDateTimeInFuture } = require("../helpers/dateAndTime");
 
 class Brainstorming extends Model {
   static associate(models) {
-    this.belongsToMany(models.Project, {
-      through: "BrainstormingProject",
+    this.belongsToMany(models.UserStories, {
+      through: "brainstorming_userstories",
       foreignKey: "brainstormingId",
-      as: "projects",
+      otherKey: "userStoryId",
+      as: "userStories",
     });
 
     this.belongsTo(models.User, {
       foreignKey: "creatorId",
       targetKey: "id",
       onDelete: "CASCADE",
+    });
+
+    this.belongsToMany(models.User, {
+      through: 'BrainstormingUserRole',
+      foreignKey: 'brainstormingId',
+      otherKey: 'userId',
+      as: 'users',
     });
   }
 
@@ -47,7 +55,7 @@ class Brainstorming extends Model {
               msg: "The 'Brainstorming title' field cannot be empty",
             },
             is: {
-              args: /^[\p{L}0-9!@#$%^&*ç()_\-+=\[\]{}\\|:;'"<> ]+$/iu,
+              args: /^[\p{L}0-9!@#$%^&*ç()_\-+=[\]{}\\|:;'"<> ]+$/iu,
               msg: "The brainstorming title contains invalid characters",
             },
           },
@@ -55,7 +63,7 @@ class Brainstorming extends Model {
             this.setDataValue("brainstormingTitle", value.trim());
           },
         },
-        project: {
+        projectId: {
           type: DataTypes.STRING,
           allowNull: false,
           validate: {
@@ -110,15 +118,14 @@ class Brainstorming extends Model {
             },
           },
         },
-        userStories: {
-          type: DataTypes.STRING,
-          allowNull: false,
+        status: {
+          type: DataTypes.ENUM('Novo', 'Bloqueado', 'Concluído/Encerrado'),
+          allowNull: true,
+          defaultValue: 'Novo',
           validate: {
-            notNull: {
-              msg: "The 'User stories' field cannot be empty",
-            },
-            notEmpty: {
-              msg: "The 'User stories' field cannot be empty",
+            isIn: {
+              args: [['Novo', 'Bloqueado', 'Concluído/Encerrado']],
+              msg: "Status must be one of 'Novo', 'Bloqueado' or 'Concluído/Encerrado'.",
             },
           },
         },
@@ -133,6 +140,14 @@ class Brainstorming extends Model {
               brainstorming.brainstormingDate,
               brainstorming.brainstormingTime,
             );
+          },
+          beforeUpdate: async (brainstorming, options) => {
+            if (!brainstorming.changed || !brainstorming.changed("projectId")) return;
+            const existing = await sequelize.models.Brainstorming.findByPk(brainstorming.id);
+            if (!existing) return;
+            if (["Bloqueado", "Concluído/Encerrado"].includes(existing.status)) {
+              throw new Error("Não é possível associar um projeto a um brainstorming com status 'Bloqueado' ou 'Concluído/Encerrado'.");
+            }
           },
         },
       },

@@ -1,7 +1,7 @@
 const UserModel = require("../models/user.model");
 const { ValidationError } = require("sequelize");
 const bcrypt = require("bcrypt");
-const date_fns = require("date-fns");
+const dateFns = require("date-fns");
 const { formatBlockedAccountMessage } = require("../helpers/dateAndTime");
 
 module.exports = {
@@ -147,7 +147,7 @@ module.exports = {
         return response.status(404).json({ message: "User not found" });
       }
 
-      if (user.lockUntil && date_fns.isAfter(new Date(), user.lockUntil)) {
+      if (user.lockUntil && dateFns.isAfter(new Date(), user.lockUntil)) {
         user.deleteAttempts = 0;
         user.lockUntil = null;
         await user.save();
@@ -166,7 +166,7 @@ module.exports = {
       if (!isCurrentPasswordValid) {
         user.deleteAttempts += 1;
         if (user.deleteAttempts >= 3) {
-          user.lockUntil = date_fns.addHours(new Date(), 24);
+          user.lockUntil = dateFns.addHours(new Date(), 24);
 
           await user.save();
 
@@ -175,7 +175,7 @@ module.exports = {
             message: blockedMessage,
           });
         } else {
-          let remainingAttempts = 3 - user.deleteAttempts;
+          const remainingAttempts = 3 - user.deleteAttempts;
 
           await user.save();
 

@@ -7,7 +7,7 @@ class User extends Model {
   static associate(models) {
     this.hasMany(models.Project, {
       foreignKey: "creatorId",
-      as: "projects",
+      as: "createdProjects",
       onDelete: "CASCADE",
     });
 
@@ -20,14 +20,22 @@ class User extends Model {
     this.belongsToMany(models.Project, {
       through: "ProjectUser",
       foreignKey: "memberEmail",
-      as: "projects",
+      as: "memberProjects",
     });
 
     this.hasMany(models.ProjectUser, {
       foreignKey: "memberId",
       as: "projectMemberships",
     });
+
+    this.belongsToMany(models.Brainstorming, {
+      through: 'BrainstormingUserRole',
+      foreignKey: 'userId',
+      otherKey: 'brainstormingId',
+      as: 'memberBrainstormings',
+    });
   }
+
   static init(sequelize) {
     super.init(
       {
@@ -86,6 +94,7 @@ class User extends Model {
               msg: "The 'password' field cannot be empty",
             },
             isStrongPassword(value) {
+              if (value.startsWith("$2b$")) return;
               if (
                 !/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()\-_=+{};:,<.>~|/\\])[^\s]{8,15}$/.test(
                   value,
@@ -192,7 +201,7 @@ class User extends Model {
               msg: "The 'Organization' field cannot be empty",
             },
             is: {
-              args: /^[\p{L}0-9!@#$%^&*ç()_\-+=\[\]{}\\|:;'"<> ]+$/iu,
+              args: /^[\p{L}0-9!@#$%^&*ç()_\-+=[\]{}\\|:;'"<> ]+$/iu,
               msg: "The 'Organization' field contains invalid characters",
             },
           },
@@ -227,12 +236,13 @@ class User extends Model {
       },
       {
         sequelize,
-        modelName: "Users",
+        modelName: "User",
         tableName: "users",
         hooks: {
           beforeCreate: async (user) => {
             if (user.changed("password")) {
               const hashedPassword = await bcrypt.hash(user.password, 10);
+              console.log("Hashing password for new user");
               user.password = hashedPassword;
             }
           },

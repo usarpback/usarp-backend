@@ -1,52 +1,43 @@
-version: "3.9"
-
 services:
   app:
-    depends_on:
-      - ${DB_HOST}
-    expose:
-      - ${DOCKER_NODE_PORT}
     build: .
-    links:
-      - ${DB_HOST}
     ports:
-      - ${LOCAL_NODE_PORT}:${DOCKER_NODE_PORT}
+      - "${LOCAL_NODE_PORT}:${DOCKER_NODE_PORT}"
     env_file: .env
     environment:
-      JWT_SECRET: ${JWT_SECRET_KEY}
-      LOCAL_NODE_PORT: ${LOCAL_NODE_PORT}
-      DOCKER_NODE_PORT: ${DOCKER_NODE_PORT}
-      LOCAL_DB_PORT: ${LOCAL_DB_PORT}
-      DOCKER_DB_PORT: ${DOCKER_DB_PORT}
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY}
+      DB_HOST: ${DB_HOST}
+      DB_PORT: ${DB_PORT}
       DB_NAME: ${DB_NAME}
       DB_USERNAME: ${DB_USERNAME}
       DB_PASSWORD: ${DB_PASSWORD}
-      DB_HOST: ${DB_HOST}
       DIALECT: ${DIALECT}
       CORS_ORIGIN: ${CORS_ORIGIN}
-    restart: always
-    stdin_open: true
-    tty: true
+    networks:
+      - docker-network
+      
+  db:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: ${DB_USERNAME}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
+    ports:
+      - "${LOCAL_DB_PORT}:5432"
+
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
     networks:
       - docker-network
 
-  db:
-    image: mariadb:10.4.14
-    container_name: mariadb
-    restart: always
-    environment:
-      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
-      MYSQL_DATABASE: ${DB_NAME}
-      MYSQL_USER: ${DB_USERNAME}
-      MYSQL_PASSWORD: ${DB_PASSWORD}
-    ports:
-      - ${LOCAL_DB_PORT}:${DOCKER_DB_PORT}
-    volumes:
-      - mariadb-data:/var/lib/mysql
-    networks:
-      - docker-network
 networks:
   docker-network:
     driver: bridge
+
 volumes:
-  mariadb-data:
+  postgres-data:

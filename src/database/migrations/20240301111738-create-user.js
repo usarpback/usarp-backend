@@ -1,6 +1,6 @@
 "use strict";
 
-const { sequelize } = require("../../models/user.model");
+require("../../models/user.model");
 
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
@@ -130,7 +130,7 @@ module.exports = {
             msg: "The 'Organization' field cannot be empty",
           },
           is: {
-            args: /^[\p{L}0-9!@#$%^&*ç()_\-+=\[\]{}\\|:;'"<> ]+$/iu,
+            args: /^[\p{L}0-9!@#$%^&*ç()_\-+=[\]{}\\|:;'"<> ]+$/iu,
             msg: "The 'Organization' field contains invalid characters",
           },
         },
